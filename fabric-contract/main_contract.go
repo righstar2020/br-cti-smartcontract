@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/rand"
-    "encoding/base64"
-    "encoding/json"
-    "fmt"
-    "github.com/hyperledger/fabric-contract-api-go/contractapi"
-    modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
