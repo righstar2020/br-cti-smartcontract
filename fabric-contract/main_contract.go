@@ -10,10 +10,12 @@ import (
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
+	dataContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/data-contract"
 )
 
 // 主合约结构体
 type MainContract struct {
+	dataContract.DataContract
 	contractapi.Contract
     modelContract.ModelContract
     ctiContract.CTIContract

@@ -40,7 +40,7 @@ func Sign(message string, privateKeyPEM []byte) (string, error) {
 }
 
 
-// 解析私钥 PEM 数据
+// 解析私钥（未加密） PEM 数据
 func ParseECPrivateKeyFromPEM(pemBytes []byte) (*ecdsa.PrivateKey, error) {
     block, _ := pem.Decode(pemBytes)
     if block == nil || block.Type != "PRIVATE KEY" {
