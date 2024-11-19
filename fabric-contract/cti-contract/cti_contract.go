@@ -31,7 +31,7 @@ var SatisticInfo = map[string]string{"location": "中国"}
 
 // CTIInfo 结构体表示情报信息
 type CTIInfo struct {
-    CTIId              string   `json:"cti_id"` // 情报ID
+    CTIId              string   `json:"cti_id"` // 情报ID(情报结构体整体Sha256生成，不可与链上已有的情报重复)
     CTIName            string   `json:"cti_name"` // 情报名称
     CTIType            int      `json:"cti_type"` // 情报类型 
     CTITrafficType     int      `json:"cti_traffic_type"` // 情报流量类型(5G、卫星网络、SDN)

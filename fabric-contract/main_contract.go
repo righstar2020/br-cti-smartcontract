@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
@@ -43,41 +42,14 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, userInfoJSON string, userID string) error {
     return c.UserContract.RegisterUserInfo(ctx, userInfoJSON, userID)
 }
-
 // 注册用户积分信息
-func (c *MainContract) RegisterUserPointInfo(ctx contractapi.TransactionContextInterface, userInfoJSON string, userID string) error {
-    return c.UserPointContract.RegisterUserPointInfo(ctx, userInfoJSON, userID)
+func (c *MainContract) RegisterUserPointInfo(ctx contractapi.TransactionContextInterface, userID string) error {
+    return c.UserPointContract.RegisterUserPointInfo(ctx, userID)
 }
 
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, ctiID string, userID string, txSignature string, nonceSignature string) error {
-    // 获取用户积分信息
-    userPointInfo, err := c.UserPointContract.QueryUserInfo(ctx, userID)
-    if err != nil {
-        return err
-    }
-
-    // 获取情报信息
-    ctiInfo, err := c.CTIContract.QueryCTIInfo(ctx, ctiID)
-    if err != nil {
-        return err
-    }
-
-    // 检查用户是否有足够的积分
-    if userPointInfo.UserPointMap[userID] < ctiInfo.Value {
-        return fmt.Errorf("insufficient points for purchase")
-    }
-
-    // 更新用户积分信息
-    userPointInfo.UserPointMap[userID] -= ctiInfo.Value
-    userPointInfo.UserCTIMap[userID] = append(userPointInfo.UserCTIMap[userID], ctiID)
-    userPointInfoJSONBytes, _ := json.Marshal(userPointInfo)
-    err = ctx.GetStub().PutState(userID, userPointInfoJSONBytes)
-    if err != nil {
-        return fmt.Errorf("failed to put state: %v", err)
-    }
-
-    return nil
+    return c.UserPointContract.PurchaseCTI(ctx, ctiID, userID, txSignature, nonceSignature)
 }
 
 // 查询模型信息
@@ -97,7 +69,7 @@ func (c *MainContract) QueryUserInfo(ctx contractapi.TransactionContextInterface
 
 // 查询用户积分信息
 func (c *MainContract) QueryUserPointInfo(ctx contractapi.TransactionContextInterface, userID string) (*userPointContract.UserPointInfo, error) {
-    return c.UserPointContract.QueryUserInfo(ctx, userID)
+    return c.UserPointContract.QueryUserPointInfo(ctx, userID)
 }
 // 生成交易随机数
 func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInterface, userID string, signatureContent string) (string, error) {

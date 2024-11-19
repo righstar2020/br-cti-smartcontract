@@ -12,7 +12,7 @@ type UserInfo struct {
     UserName         string `json:"user_name"`
     PublicKey        string `json:"public_key"`
     PublicKeyType    string `json:"public_key_type"`
-    Value            int    `json:"value"`
+    Value            int    `json:"value"` //用户积分
     CreateTime       string `json:"create_time"`
 }
 
