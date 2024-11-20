@@ -27,7 +27,19 @@ var Tags_List = []string{"卫星网络", "SDN网络", "5G网络", "恶意软件"
 //情报IOCs
 var IOCs_List = []string{"IP", "端口", "流特征", "HASH", "URL", "CVE"}
 //情报统性信息
-var SatisticInfo = map[string]string{"location": "中国"}
+var SatisticInfo = map[string]interface{}{
+    "location": map[string]int{
+        "中国": 1, 
+        "美国": 2, 
+        "俄罗斯": 3,
+        "欧洲": 4, 
+        "亚洲": 5, 
+        "非洲": 6,
+        "南美洲": 7, 
+        "北美洲": 8,
+        "大洋洲": 9,
+    },
+}
 
 // CTIInfo 结构体表示情报信息
 type CTIInfo struct {
