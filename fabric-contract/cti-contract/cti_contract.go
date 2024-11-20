@@ -49,7 +49,7 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, ctiTrafficType int, openSource int,  tags []string, iocs []string, stixdata string, description string, dataSize int, cid string, need int, value int, compreValue int, privateKey string)  error {
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, statisticInfo string,ctiTrafficType int, openSource int,  tags []string, iocs []string, stixdata string, description string, dataSize int, ipfsHash string, need int, value int, compreValue int, privateKey string)  error {
 	// 生成随机的 CTI ID
 	ctiID, err := utils.GenerateNextCTIID(ctx)
 	if err != nil {
@@ -68,11 +68,12 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		CTITrafficType: ctiTrafficType,                                                                      // 流量类型
 		OpenSource:     openSource,                                                                          // 是否开源
 		Tags:           tags,
-        IOCs:            iocs,
-        StixData:        stixdata,                                                                       //情报标签
+        IOCs:           iocs,
+        StixData:       stixdata,                                                                       //情报标签
+		StatisticInfo:  statisticInfo,                                                                   // 统计信息
 		Description:    description,                                                                         // 情报描述
 		DataSize:       dataSize,                                                                            // 数据大小（B）
-		IPFSHash:       cid,                                                                                 // IPFS 地址
+		IPFSHash:       ipfsHash,                                                                                 // IPFS 地址
 		Need:           need,                                                                                // 情报需求量，暂时为 0
 		Value:          value,                                                                               // 情报价值（积分）
 		CompreValue:    compreValue,                                                                         // 综合价值（积分激励算法定价）

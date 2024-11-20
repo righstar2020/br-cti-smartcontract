@@ -61,8 +61,8 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 }
 
 // 注册情报信息
-func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, ctiTrafficType int, openSource int, tags []string, iocs []string, stixdata string, description string, dataSize int, cid string, need int, value int, compreValue int, privateKey string) error {
-	return c.CTIContract.RegisterCTIInfo(ctx, ctiName, ctiTrafficType, openSource, tags, iocs, stixdata, description, dataSize, cid, need, value, compreValue, privateKey)
+func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, statisticInfo string,ctiTrafficType int, openSource int, tags []string, iocs []string, stixdata string, description string, dataSize int, cid string, need int, value int, compreValue int, privateKey string) error {
+	return c.CTIContract.RegisterCTIInfo(ctx, ctiName, statisticInfo,ctiTrafficType, openSource, tags, iocs, stixdata, description, dataSize, cid, need, value, compreValue, privateKey)
 }
 
 // 注册用户信息
