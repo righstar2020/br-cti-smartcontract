@@ -39,3 +39,19 @@ type CtiInfo struct {
 	SaleCount      int       `json:"sale_count"`       //销售数量
 	CreateTime     string    `json:"create_time"`      // 情报创建时间（由合约生成）
 }
+
+// ModelInfo 结构体表示模型信息
+type ModelInfo struct {
+    ModelID            string   `json:"model_id"`
+    ModelName          string   `json:"model_name"`
+    CreatorUserID      string   `json:"creator_user_id"`
+    TrafficType        string   `json:"traffic_type"`
+    TrafficFeatures    []string `json:"traffic_features"`
+    TrafficProcessCode string   `json:"traffic_process_code"`
+    MLMethod           string   `json:"ml_method"`
+    MLInfo             string   `json:"ml_info"`
+    MLTrainCode        string   `json:"ml_train_code"`
+    IPFSHashAddress    string   `json:"ipfs_hash_address"`
+    RefCTIId           string   `json:"ref_cti_id"`
+    CreateTime         string   `json:"create_time"`
+}

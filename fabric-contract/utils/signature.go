@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -187,14 +188,16 @@ func GenerateRSAKeyPair() (string, error) {
 		Bytes: publicKeyPEM,
 	})
 
-	// 拼接私钥和公钥，分别加上 "RSA公钥：" 和 "RSA私钥：" 的标识
-	keyPair := fmt.Sprintf("RSA公钥： %s\nRSA私钥： %s", publicKeyPEMBytes, privateKeyPEMBytes)
+	// 去掉 BEGIN 和 END 标记
+	cleanPrivateKey := removePEMBoundaries(privateKeyPEMBytes)
+	cleanPublicKey := removePEMBoundaries(publicKeyPEMBytes)
 
-	// 返回拼接后的密钥对和错误
+	// 拼接格式化后的字符串
+	keyPair := fmt.Sprintf("RSA私钥：%s\n\nRSA公钥：%s", cleanPrivateKey, cleanPublicKey)
+
 	return keyPair, nil
 }
 
-// 私钥生成公钥
 func GetPublicKeyFromPrivateKey(privateKeyPEM string) (string, error) {
 	// 解码PEM格式私钥
 	block, _ := pem.Decode([]byte(privateKeyPEM))
@@ -217,11 +220,26 @@ func GetPublicKeyFromPrivateKey(privateKeyPEM string) (string, error) {
 		return "", fmt.Errorf("failed to marshal RSA public key: %v", err)
 	}
 
-	// 将公钥PEM编码为字符串并返回
-	publicKeyPEMStr := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyPEM}))
+	// 去掉 BEGIN 和 END 标记
+	cleanPublicKey := removePEMBoundaries(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyPEM}))
 
-	// 返回公钥的 PEM 格式
-	return publicKeyPEMStr, nil
+	// 返回公钥内容
+	return cleanPublicKey, nil
+}
+
+// 辅助函数：去掉 PEM 的 BEGIN 和 END 标记
+func removePEMBoundaries(pemBytes []byte) string {
+	// 转换为字符串
+	pemString := string(pemBytes)
+
+	// 去掉 BEGIN 和 END 的行，并移除换行符
+	var result string
+	for _, line := range strings.Split(pemString, "\n") {
+		if !strings.HasPrefix(line, "-----") && line != "" {
+			result += line
+		}
+	}
+	return result
 }
 
 // 获取和更新CTIID计数器

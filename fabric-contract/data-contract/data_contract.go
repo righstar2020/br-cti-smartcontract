@@ -1,6 +1,9 @@
 
 package data_contract
 import (
+	"fmt"
+	"encoding/json"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
     "github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 type DataSatisticsInfo struct {
@@ -26,3 +29,22 @@ type DataContract struct {
 
 //在这里写统计数据的函数(每次情报上链都会调用这些函数做统计)
 //需要对外提供查询接口
+
+// QueryCTIInfo 根据ID查询情报信息
+func (c *DataContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiInfo, error) {
+	ctiInfoJSON, err := ctx.GetStub().GetState(ctiID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if ctiInfoJSON == nil {
+		return nil, fmt.Errorf("the cti %s does not exist", ctiID)
+	}
+
+	var ctiInfo typestruct.CtiInfo
+	err = json.Unmarshal(ctiInfoJSON, &ctiInfo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cti info: %v", err)
+	}
+
+	return &ctiInfo, nil
+}

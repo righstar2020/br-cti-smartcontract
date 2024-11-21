@@ -1,46 +1,53 @@
 package cti_contract
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-    "time"
-    "github.com/righstar2020/br-cti-smartcontract/fabric-contract/utils"
+	"time"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/utils"
 )
+
 const (
-    // 攻击类型
-    AttackType_Traffic         = 1 // 恶意流量
-    AttackType_Malware         = 2 // 恶意软件  
-    AttackType_Phishing        = 3 // 钓鱼地址
-    AttackType_Botnet          = 4 // 僵尸网络
-    AttackType_AppLayer        = 5 // 应用层攻击
-    AttackType_OpenSource      = 6 // 开源情报
+	// 攻击类型
+	AttackType_Traffic    = 1 // 恶意流量
+	AttackType_Malware    = 2 // 恶意软件
+	AttackType_Phishing   = 3 // 钓鱼地址
+	AttackType_Botnet     = 4 // 僵尸网络
+	AttackType_AppLayer   = 5 // 应用层攻击
+	AttackType_OpenSource = 6 // 开源情报
 )
-//流量情报类型
+
+// 流量情报类型
 const (
-	CTITrafficType_5G = 1 // 5G
+	CTITrafficType_5G        = 1 // 5G
 	CTITrafficType_Satellite = 2 // 卫星网络
-	CTITrafficType_SDN = 3 // SDN
+	CTITrafficType_SDN       = 3 // SDN
 )
-//----------示例数据-----------------/
-//情报标签
+
+// ----------示例数据-----------------/
+// 情报标签
 var Tags_List = []string{"卫星网络", "SDN网络", "5G网络", "恶意软件", "DDoS", "钓鱼", "僵尸网络", "APT", "IOT"}
-//情报IOCs
+
+// 情报IOCs
 var IOCs_List = []string{"IP", "端口", "流特征", "HASH", "URL", "CVE"}
-//情报统性信息
+
+// 情报统性信息
 var SatisticInfo = map[string]interface{}{
-    "location": map[string]int{
-        "中国": 1, 
-        "美国": 2, 
-        "俄罗斯": 3,
-        "欧洲": 4, 
-        "亚洲": 5, 
-        "非洲": 6,
-        "南美洲": 7, 
-        "北美洲": 8,
-        "大洋洲": 9,
-    },
+	"location": map[string]int{
+		"中国":  1,
+		"美国":  2,
+		"俄罗斯": 3,
+		"欧洲":  4,
+		"亚洲":  5,
+		"非洲":  6,
+		"南美洲": 7,
+		"北美洲": 8,
+		"大洋洲": 9,
+	},
 }
 
 // CTIContract 是情报合约的结构体
@@ -49,31 +56,42 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, statisticInfo string,ctiTrafficType int, openSource int,  tags []string, iocs []string, stixdata string, description string, dataSize int, ipfsHash string, need int, value int, compreValue int, privateKey string)  error {
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, ctitype int, ctiTrafficType int, openSource int, tags []string, iocs []string, stixdata string, statisticInfo string, description string, dataSize int, ipfsHash string, need int, value int, compreValue int, privateKey string) error {
 	// 生成随机的 CTI ID
 	ctiID, err := utils.GenerateNextCTIID(ctx)
 	if err != nil {
-		return  fmt.Errorf("failed to generate random CTI ID: %v", err)
+		return fmt.Errorf("failed to generate random CTI ID: %v", err)
 	}
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
-		return  fmt.Errorf("failed to get transaction timestamp: %v", err)
+		return fmt.Errorf("failed to get transaction timestamp: %v", err)
 	}
+	// 计算 stixdata 的哈希值
+	hash1 := sha256.New()
+	hash1.Write([]byte(stixdata))
+	hashdata := hex.EncodeToString(hash1.Sum(nil))
 
+	// 计算 privateKey 的哈希值
+	hash2 := sha256.New()
+	hash2.Write([]byte(privateKey))
+	userID := hex.EncodeToString(hash2.Sum(nil))
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
-		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
-		CTIName:        ctiName,                                                                             // 情报名称
-		CTITrafficType: ctiTrafficType,                                                                      // 流量类型
-		OpenSource:     openSource,                                                                          // 是否开源
-		Tags:           tags,
-        IOCs:           iocs,
-        StixData:       stixdata,                                                                       //情报标签
-		StatisticInfo:  statisticInfo,                                                                   // 统计信息
-		Description:    description,                                                                         // 情报描述
-		DataSize:       dataSize,                                                                            // 数据大小（B）
-		IPFSHash:       ipfsHash,                                                                                 // IPFS 地址
+		CTIID:          ctiID,   // 生成唯一的 CTI ID
+		CTIName:        ctiName, // 情报名称
+		CTIType:        ctitype,
+		CTITrafficType: ctiTrafficType, // 流量类型
+		OpenSource:     openSource,     // 是否开源
+		CreatorUserID:  userID,
+		Tags:           tags, //情报标签
+		IOCs:           iocs,
+		StixData:       stixdata,
+		StatisticInfo:  statisticInfo, // 统计信息
+		Description:    description,   // 情报描述
+		DataSize:       dataSize,
+		DataHash:       hashdata,                                                                            // 数据大小（B）
+		IPFSHash:       ipfsHash,                                                                            // IPFS 地址
 		Need:           need,                                                                                // 情报需求量，暂时为 0
 		Value:          value,                                                                               // 情报价值（积分）
 		CompreValue:    compreValue,                                                                         // 综合价值（积分激励算法定价）
@@ -84,13 +102,13 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	// 将新 CTI 信息序列化为 JSON 字节数组
 	ctiAsBytes, err := json.Marshal(newCTI)
 	if err != nil {
-		return  fmt.Errorf("failed to marshal CTI info: %v", err)
+		return fmt.Errorf("failed to marshal CTI info: %v", err)
 	}
 
 	// 使用 CTI ID 作为键将情报数据存储到账本中
 	err = ctx.GetStub().PutState(ctiID, ctiAsBytes)
 	if err != nil {
-		return  fmt.Errorf("failed to put CTI info into world state: %v", err)
+		return fmt.Errorf("failed to put CTI info into world state: %v", err)
 	}
 
 	return nil
@@ -115,38 +133,42 @@ func (c *CTIContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, 
 	return &ctiInfo, nil
 }
 
-// 其他函数如分页查询等类似实现...
-// 分页查询所有 CTI 信息
-func (c *CTIContract) QueryAllCTIInfo(ctx contractapi.TransactionContextInterface, page int, pageSize int) ([]typestruct.CtiInfo, error) {
-	// 设置查询起始和结束的键
-	startKey := "CTI_" + fmt.Sprintf("%d", (page-1)*pageSize+1)  // 计算当前页的起始键
-	endKey := "CTI_" + fmt.Sprintf("%d", page*pageSize)            // 计算当前页的结束键
+func (c *CTIContract) QueryCTIInfoWithManualPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) ([]typestruct.CtiInfo, error) {
+    // 查询所有数据
+    queryString := `{"selector":{"cti_id":{"$exists":true}}}`
 
-	// 使用 GetStateByRange 查询CTI信息
-	resultsIterator, err := ctx.GetStub().GetStateByRange(startKey, endKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CTI info by range: %v", err)
-	}
-	defer resultsIterator.Close()
+    resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+    if err != nil {
+        return nil, fmt.Errorf("failed to execute query: %v", err)
+    }
+    defer resultsIterator.Close()
 
-	var ctiInfos []typestruct.CtiInfo
+    // 手动分页
+    var results []typestruct.CtiInfo
+    startIndex := (page - 1) * pageSize
+    endIndex := startIndex + pageSize
+    currentIndex := 0
 
-	// 遍历查询结果并将数据反序列化
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate over query results: %v", err)
-		}
+    for resultsIterator.HasNext() {
+        queryResponse, err := resultsIterator.Next()
+        if err != nil {
+            return nil, fmt.Errorf("failed to iterate over query results: %v", err)
+        }
 
-		var ctiInfo typestruct.CtiInfo
-		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
-		}
+        if currentIndex >= startIndex && currentIndex < endIndex {
+            var ctiInfo typestruct.CtiInfo
+            err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+            if err != nil {
+                return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+            }
+            results = append(results, ctiInfo)
+        }
 
-		// 添加到结果数组
-		ctiInfos = append(ctiInfos, ctiInfo)
-	}
+        currentIndex++
+        if currentIndex >= endIndex {
+            break
+        }
+    }
 
-	return ctiInfos, nil
+    return results, nil
 }

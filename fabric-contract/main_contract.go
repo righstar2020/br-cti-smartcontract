@@ -56,13 +56,13 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 }
 
 // 注册模型信息
-func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, modelInfoJSON string, userID string, txSignature string, nonceSignature string) error {
-	return c.ModelContract.RegisterModelInfo(ctx, modelInfoJSON, userID, txSignature, nonceSignature)
+func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface,  modelid string,modelname string,traffictype string,trafficfeatures []string,trafficprocesscode string,mlmethod string,mlinfo string,mltraincode string,ipfshash string,refctiid string,privateKey string) error {
+	return c.ModelContract.RegisterModelInfo(ctx, modelid ,modelname ,traffictype ,trafficfeatures ,trafficprocesscode ,mlmethod ,mlinfo ,mltraincode ,ipfshash ,refctiid ,privateKey )
 }
 
 // 注册情报信息
-func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, statisticInfo string,ctiTrafficType int, openSource int, tags []string, iocs []string, stixdata string, description string, dataSize int, cid string, need int, value int, compreValue int, privateKey string) error {
-	return c.CTIContract.RegisterCTIInfo(ctx, ctiName, statisticInfo,ctiTrafficType, openSource, tags, iocs, stixdata, description, dataSize, cid, need, value, compreValue, privateKey)
+func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, ctitype int,  ctiTrafficType int, openSource int, tags []string, iocs []string, stixdata string, statisticInfo string,description string, dataSize int, ipfsHash string, need int, value int, compreValue int, privateKey string) error {
+	return c.CTIContract.RegisterCTIInfo(ctx, ctiName, ctitype,  ctiTrafficType, openSource, tags, iocs, stixdata,statisticInfo, description, dataSize, ipfsHash, need, value, compreValue, privateKey)
 }
 
 // 注册用户信息
@@ -81,7 +81,7 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 }
 
 // 查询模型信息
-func (c *MainContract) QueryModelInfo(ctx contractapi.TransactionContextInterface, modelID string) (*modelContract.ModelInfo, error) {
+func (c *MainContract) QueryModelInfo(ctx contractapi.TransactionContextInterface, modelID string) (*typestruct.ModelInfo, error) {
 	return c.ModelContract.QueryModelInfo(ctx, modelID)
 }
 
@@ -106,12 +106,12 @@ func (c *MainContract) UpdateUserInfo(ctx contractapi.TransactionContextInterfac
 }
 
 // 分页查询
-func (c *MainContract) QueryAllCTIInfo(ctx contractapi.TransactionContextInterface, page int, pageSize int) ([]typestruct.CtiInfo, error) {
-	return c.CTIContract.QueryAllCTIInfo(ctx, page, pageSize)
+func (c *MainContract) QueryCTIInfoWithManualPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) ([]typestruct.CtiInfo, error) {
+	return c.CTIContract.QueryCTIInfoWithManualPagination(ctx, page, pageSize)
 }
 
 // 生成 RSA 公私钥对
-func (c *MainContract) GenerateKeys(ctx contractapi.TransactionContextInterface) (string, error) {
+func (c *MainContract) GenerateRSAKeyPair(ctx contractapi.TransactionContextInterface) (string, error) {
 	// 调用 utils 包中的 GenerateRSAKeyPair 方法
 	keyPair, err := utils.GenerateRSAKeyPair()
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *MainContract) GenerateKeys(ctx contractapi.TransactionContextInterface)
 }
 
 // 从私钥获取公钥
-func (c *MainContract) GetPublicKey(ctx contractapi.TransactionContextInterface, privateKeyPEM string) (string, error) {
+func (c *MainContract) GetPublicKeyFromPrivateKey(ctx contractapi.TransactionContextInterface, privateKeyPEM string) (string, error) {
 	// 调用 utils 包中的 GetPublicKeyFromPrivateKey 方法
 	publicKey, err := utils.GetPublicKeyFromPrivateKey(privateKeyPEM)
 	if err != nil {

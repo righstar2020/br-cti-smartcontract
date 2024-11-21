@@ -1,68 +1,80 @@
 package model_contract
 
 import (
-    "encoding/json"
-    "fmt"
-    "github.com/hyperledger/fabric-contract-api-go/contractapi"
-)
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"time"
 
-// ModelInfo 结构体表示模型信息
-type ModelInfo struct {
-    ModelID            string   `json:"model_id"`
-    ModelName          string   `json:"model_name"`
-    CreatorUserID      string   `json:"creator_user_id"`
-    TrafficType        string   `json:"traffic_type"`
-    TrafficFeatures    []string `json:"traffic_features"`
-    TrafficProcessCode string   `json:"traffic_process_code"`
-    MLMethod           string   `json:"ml_method"`
-    MLInfo             string   `json:"ml_info"`
-    MLTrainCode        string   `json:"ml_train_code"`
-    IPFSHashAddress    string   `json:"ipfs_hash_address"`
-    RefCTIId           string   `json:"ref_cti_id"`
-    CreateTime         string   `json:"create_time"`
-}
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
+)
 
 // ModelContract 是模型合约的结构体
 type ModelContract struct {
-    contractapi.Contract
+	contractapi.Contract
 }
 
-// RegisterModelInfo 注册模型信息
-func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, modelInfoJSON string, userID string, txSignature string, nonceSignature string) error {
-    var modelInfo ModelInfo
-    err := json.Unmarshal([]byte(modelInfoJSON), &modelInfo)
-    if err != nil {
-        return fmt.Errorf("failed to unmarshal model info: %v", err)
-    }
+// 注册 model信息
+func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, modelid string, modelname string, traffictype string, trafficfeatures []string, trafficprocesscode string, mlmethod string, mlinfo string, mltraincode string, ipfshash string, refctiid string, privateKey string) error {
 
-    // TODO: 验证签名和随机数
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get transaction timestamp: %v", err)
+	}
+	// 计算 privateKey 的哈希值
+	hash2 := sha256.New()
+	hash2.Write([]byte(privateKey))
+	userID := hex.EncodeToString(hash2.Sum(nil))
+	// 创建新的 CtiInfo 对象
+	newModel := typestruct.ModelInfo{
+		ModelID:            modelid,
+		ModelName:          modelname,
+		CreatorUserID:      userID,
+		TrafficType:        traffictype,
+		TrafficFeatures:    trafficfeatures,
+		TrafficProcessCode: trafficprocesscode,
+		MLMethod:           mlmethod,
+		MLInfo:             mlinfo,
+		MLTrainCode:        mltraincode,
+		IPFSHashAddress:    ipfshash,
+		RefCTIId:           refctiid,
+		CreateTime:         time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339),
+	}
 
-    modelInfoJSONBytes, _ := json.Marshal(modelInfo)
-    err = ctx.GetStub().PutState(modelInfo.ModelID, modelInfoJSONBytes)
-    if err != nil {
-        return fmt.Errorf("failed to put state: %v", err)
-    }
+	// 将新 CTI 信息序列化为 JSON 字节数组
+	modelAsBytes, err := json.Marshal(newModel)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CTI info: %v", err)
+	}
 
-    return nil
+	// 使用 CTI ID 作为键将情报数据存储到账本中
+	err = ctx.GetStub().PutState(modelid, modelAsBytes)
+	if err != nil {
+		return fmt.Errorf("failed to put CTI info into world state: %v", err)
+	}
+
+	return nil
 }
 
 // QueryModelInfo 根据ID查询模型信息
-func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterface, modelID string) (*ModelInfo, error) {
-    modelInfoJSON, err := ctx.GetStub().GetState(modelID)
-    if err != nil {
-        return nil, fmt.Errorf("failed to read from world state: %v", err)
-    }
-    if modelInfoJSON == nil {
-        return nil, fmt.Errorf("the model %s does not exist", modelID)
-    }
+func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterface, modelID string) (*typestruct.ModelInfo, error) {
+	modelInfoJSON, err := ctx.GetStub().GetState(modelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if modelInfoJSON == nil {
+		return nil, fmt.Errorf("the model %s does not exist", modelID)
+	}
 
-    var modelInfo ModelInfo
-    err = json.Unmarshal(modelInfoJSON, &modelInfo)
-    if err != nil {
-        return nil, fmt.Errorf("failed to unmarshal model info: %v", err)
-    }
+	var modelInfo typestruct.ModelInfo
+	err = json.Unmarshal(modelInfoJSON, &modelInfo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal model info: %v", err)
+	}
 
-    return &modelInfo, nil
+	return &modelInfo, nil
 }
 
 // 其他函数如分页查询等类似实现...
