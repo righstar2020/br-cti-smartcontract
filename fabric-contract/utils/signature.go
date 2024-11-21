@@ -280,3 +280,42 @@ func GenerateNextCTIID(ctx contractapi.TransactionContextInterface) (string, err
 	// 返回生成的CTIID
 	return string(newCTIID), nil
 }
+
+// 获取和更新 ModelID 计数器
+func GenerateNextModelID(ctx contractapi.TransactionContextInterface) (string, error) {
+	// 获取当前 ModelID 计数器的值
+	modelIDCounterKey := "MODELID_COUNTER"
+	currentCountAsBytes, err := ctx.GetStub().GetState(modelIDCounterKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to get ModelID counter: %v", err)
+	}
+
+	var currentCount int
+	if currentCountAsBytes == nil {
+		// 如果计数器不存在，则初始化为0
+		currentCount = 0
+	} else {
+		// 将存储的计数器值转换为整数
+		err = json.Unmarshal(currentCountAsBytes, &currentCount)
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal current count: %v", err)
+		}
+	}
+
+	// 生成新的 ModelID（通过递增计数器）
+	newModelID := fmt.Sprintf("MODEL_%d", currentCount+1)
+
+	// 更新计数器
+	currentCount++
+	newCountAsBytes, err := json.Marshal(currentCount)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal updated count: %v", err)
+	}
+	err = ctx.GetStub().PutState(modelIDCounterKey, newCountAsBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to update ModelID counter: %v", err)
+	}
+
+	// 返回生成的 ModelID
+	return string(newModelID), nil
+}
