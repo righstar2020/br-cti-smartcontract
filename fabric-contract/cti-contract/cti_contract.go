@@ -135,14 +135,14 @@ func (c *CTIContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, 
 	return &ctiInfo, nil
 }
 
-func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) ([]byte, error) {
+func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
 	// 构建查询字符串，匹配以 ctiIDPrefix 开头的 CTIID
 	queryString := fmt.Sprintf(`{"selector":{"cti_id":{"$regex":"^%s"}}}`, ctiIDPrefix)
 
 	// 执行带分页的查询
 	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute paginated query: %v", err)
+		return "", fmt.Errorf("failed to execute paginated query: %v", err)
 	}
 	defer resultsIterator.Close()
 
@@ -152,13 +152,13 @@ func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.Transact
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
+			return "", fmt.Errorf("failed to get next query result: %v", err)
 		}
 
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+			return "", fmt.Errorf("failed to unmarshal query result: %v", err)
 		}
 
 		ctiInfos = append(ctiInfos, ctiInfo)
@@ -173,14 +173,15 @@ func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.Transact
 		Bookmark: metadata.Bookmark,
 	}
 
-	// 序列化为 JSON
+	// 序列化为 JSON 字符串
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal response: %v", err)
+		return "", fmt.Errorf("failed to marshal response: %v", err)
 	}
 
-	return responseBytes, nil
+	return string(responseBytes), nil // 返回 JSON 字符串
 }
+
 
 // 根据用户的私钥查询所有相关的 CTIInfo
 func (c *CTIContract) QueryCTIInfoByPrivateKey(ctx contractapi.TransactionContextInterface, privateKey string) ([]typestruct.CtiInfo, error) {

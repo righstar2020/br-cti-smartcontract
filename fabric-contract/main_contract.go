@@ -111,7 +111,7 @@ func (c *MainContract) QueryUserPointInfo(ctx contractapi.TransactionContextInte
 }
 
 // 模型信息分页查询
-func (c *MainContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) ([]byte, error) {
+func (c *MainContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) (string, error) {
 	return c.ModelContract.QueryModelInfoByModelIDWithPagination(ctx, modelIDPrefix, pageSize, bookmark)
 }
 
@@ -136,8 +136,19 @@ func (c *MainContract) UpdateUserInfo(ctx contractapi.TransactionContextInterfac
 }
 
 // 分页查询
-func (c *MainContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) ([]byte, error) {
+func (c *MainContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
 	return c.CTIContract.QueryCTIInfoByCTIIDWithPagination(ctx, ctiIDPrefix, pageSize, bookmark)
+}
+
+// CTI精简信息
+func (c *MainContract) QueryCTISummaryInfoByCTIID(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiSummaryInfo, error) {
+	return c.DataContract.QueryCTISummaryInfoByCTIID(ctx, ctiID)
+}
+
+// 统计信息
+// 根据相关CTI查询
+func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInterface) (string, error) {
+	return c.DataContract.GetDataStatistics(ctx)
 }
 
 // 生成 RSA 公私钥对

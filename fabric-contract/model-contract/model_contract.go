@@ -82,15 +82,15 @@ func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterfa
 	return &modelInfo, nil
 }
 
-// 分页查询
-func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) ([]byte, error) {
+// 分页查询模型信息
+func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) (string, error) {
 	// 构建查询字符串，匹配以 modelIDPrefix 开头的 ModelID
 	queryString := fmt.Sprintf(`{"selector":{"model_id":{"$regex":"^%s"}}}`, modelIDPrefix)
 
 	// 执行带分页的查询
 	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute paginated query: %v", err)
+		return "", fmt.Errorf("failed to execute paginated query: %v", err)
 	}
 	defer resultsIterator.Close()
 
@@ -100,13 +100,18 @@ func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.Tr
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
+			return "", fmt.Errorf("failed to get next query result: %v", err)
 		}
 
 		var model typestruct.ModelInfo
 		err = json.Unmarshal(queryResponse.Value, &model)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+			return "", fmt.Errorf("failed to unmarshal query result: %v", err)
+		}
+
+		// 确保 TrafficFeatures 等字段不会为 nil
+		if model.TrafficFeatures == nil {
+			model.TrafficFeatures = []string{}
 		}
 
 		models = append(models, model)
@@ -121,14 +126,15 @@ func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.Tr
 		Bookmark: metadata.Bookmark,
 	}
 
-	// 序列化为 JSON
+	// 序列化为 JSON 字符串
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal response: %v", err)
+		return "", fmt.Errorf("failed to marshal response: %v", err)
 	}
 
-	return responseBytes, nil
+	return string(responseBytes), nil // 返回 JSON 字符串
 }
+
 
 // 根据流量类型查询
 func (c *ModelContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, trafficType string) ([]typestruct.ModelInfo, error) {
@@ -164,44 +170,38 @@ func (c *ModelContract) QueryModelsByTrafficType(ctx contractapi.TransactionCont
 	return models, nil
 }
 
-// 查询用户所上传的模型信息
 func (c *ModelContract) QueryModelsByPrivateKey(ctx contractapi.TransactionContextInterface, privateKey string) ([]typestruct.ModelInfo, error) {
-	// 使用私钥生成 CreatorUserID（SHA256）
 	hash := sha256.New()
 	hash.Write([]byte(privateKey))
-	creatorUserID := hex.EncodeToString(hash.Sum(nil))
+	creatorUserID := hex.EncodeToString(hash.Sum(nil))// 一致的SHA256生成逻辑
 
-	// 构建查询字符串
-	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, creatorUserID)
+    queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, creatorUserID)
 
-	// 执行查询
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %v", err)
-	}
-	defer resultsIterator.Close()
+    resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+    if err != nil {
+        return nil, fmt.Errorf("failed to execute query: %v", err)
+    }
+    defer resultsIterator.Close()
 
-	var models []typestruct.ModelInfo
+    var models []typestruct.ModelInfo
+    for resultsIterator.HasNext() {
+        queryResponse, err := resultsIterator.Next()
+        if err != nil {
+            return nil, fmt.Errorf("failed to get next query result: %v", err)
+        }
 
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
-		}
+        var model typestruct.ModelInfo
+        err = json.Unmarshal(queryResponse.Value, &model)
+        if err != nil {
+            return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+        }
 
-		var model typestruct.ModelInfo
-		err = json.Unmarshal(queryResponse.Value, &model)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
-		}
+        models = append(models, model)
+    }
 
-		models = append(models, model)
-	}
-
-	// 返回结果
-	return models, nil
+    return models, nil
 }
+
 
 // 根据CTIid查询
 func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
@@ -236,3 +236,4 @@ func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContext
 	// 返回结果
 	return models, nil
 }
+
