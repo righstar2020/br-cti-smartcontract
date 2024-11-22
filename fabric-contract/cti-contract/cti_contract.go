@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
     "time"
-    "github.com/righstar2020/br-cti-smartcontract/fabric-contract/utils"
+    "github.com/google/uuid"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 )
 const (
     // 攻击类型
@@ -49,12 +50,16 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, ctiName string, statisticInfo string,ctiTrafficType int, openSource int,  tags []string, iocs []string, stixdata string, description string, dataSize int, ipfsHash string, need int, value int, compreValue int, privateKey string)  error {
-	// 生成随机的 CTI ID
-	ctiID, err := utils.GenerateNextCTIID(ctx)
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,txData []byte)  error {
+	//解析交易数据	
+	var ctiTxData msgstruct.CtiTxData
+	err := json.Unmarshal(txData, &ctiTxData)
 	if err != nil {
-		return  fmt.Errorf("failed to generate random CTI ID: %v", err)
+		return fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
+	
+	// 生成随机的 CTI ID
+	ctiID := uuid.New().String()	
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
@@ -64,21 +69,20 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
 		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
-		CTIName:        ctiName,                                                                             // 情报名称
-		CTITrafficType: ctiTrafficType,                                                                      // 流量类型
-		OpenSource:     openSource,                                                                          // 是否开源
-		Tags:           tags,
-        IOCs:           iocs,
-        StixData:       stixdata,                                                                       //情报标签
-		StatisticInfo:  statisticInfo,                                                                   // 统计信息
-		Description:    description,                                                                         // 情报描述
-		DataSize:       dataSize,                                                                            // 数据大小（B）
-		IPFSHash:       ipfsHash,                                                                                 // IPFS 地址
-		Need:           need,                                                                                // 情报需求量，暂时为 0
-		Value:          value,                                                                               // 情报价值（积分）
-		CompreValue:    compreValue,                                                                         // 综合价值（积分激励算法定价）
-		SaleCount:      0,                                                                                   // 销售数量
-		CreateTime:     time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339), // 情报创建时间
+		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
+		CTITrafficType: ctiTxData.CTITrafficType,                                                                      // 流量类型
+		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
+		Tags:           ctiTxData.Tags,                                                                                // 情报标签
+		IOCs:           ctiTxData.IOCs,                                                                                         // 情报IOCs
+		StixData:       ctiTxData.StixData,                                                                                                // STIX数据
+		StatisticInfo:  ctiTxData.StatisticInfo,                                                                                          // 统计信息
+		Description:    ctiTxData.Description,                                                                         // 情报描述
+		DataSize:       ctiTxData.DataSize,                                                                            // 数据大小（B）
+		IPFSHash:       ctiTxData.IPFSHash,                                                                                 // IPFS 地址
+		Need:           ctiTxData.Need,                                                                                                 // 情报需求量
+		Value:          ctiTxData.Value,                                                                                                 // 情报价值（积分）
+		CompreValue:    ctiTxData.CompreValue,                                                                                                 // 综合价值（积分激励算法定价）
+		CreateTime:     time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339),              // 情报创建时间
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组

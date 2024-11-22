@@ -6,68 +6,21 @@ import (
     
     "github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
     "github.com/hyperledger/fabric-contract-api-go/contractapi"
-     //UserContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
+    "github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 )
 
-// UserPointInfo 结构体表示用户积分信息,映射到情报ID:ctiID
-// type UserPointInfo struct {
-//     UserValue           int                           `json:"user_value"` //用户积分    
-//     UserCTIMap          map[string][]string           `json:"user_cti_map"` //用户拥有的情报map
-//     CTIBuyMap           map[string]int                `json:"cti_buy_map"` //用户购买的情报map
-//     CTISaleMap          map[string]int                `json:"cti_sale_map"` //用户销售的情报map
-// }
 
 // UserPointContract 是积分合约的结构体
 type UserPointContract struct {
     contractapi.Contract
 }
-func (c *UserPointContract) InitUserPointInfoContract(ctx contractapi.TransactionContextInterface) error {
-    //初始化积分合约
-    userPointInfoMap := make(map[string]typestruct.UserPointInfo)
-    userPointInfoMapJSONBytes, _ := json.Marshal(userPointInfoMap)
-    err := ctx.GetStub().PutState("UserPointInfoMap", userPointInfoMapJSONBytes)
-    if err != nil {
-        return fmt.Errorf("failed to put state: %v", err)
-    }
-    return nil
-    
-}
 
 
-// RegisterUserPointInfo 注册用户积分信息(初始化)
-func (c *UserPointContract) RegisterUserPointInfo(ctx contractapi.TransactionContextInterface,userID string) error {
-    var userInfo *typestruct.UserInfo
-    userInfoBytes, err := ctx.GetStub().GetState(userID)
-    err = json.Unmarshal(userInfoBytes, &userInfo)
-    if err != nil {
-        return fmt.Errorf("failed to unmarshal user info: %v", err)
-    }
-    var userPointInfo = typestruct.UserPointInfo{
-        UserValue: userInfo.Value,
-        UserCTIMap: make(map[string][]string),
-        CTISaleMap: make(map[string]int),
-    }
-    var userPointInfoMap = make(map[string]typestruct.UserPointInfo)
-    userPointInfoMapJSONBytes, _ := ctx.GetStub().GetState("UserPointInfoMap")
-    err = json.Unmarshal(userPointInfoMapJSONBytes, &userPointInfoMap)
-    if err != nil {
-        return fmt.Errorf("failed to unmarshal user point info map: %v", err)
-    }
-    //更新用户积分信息
-    userPointInfoMap[userID] = userPointInfo
-    userPointInfoMapJSONBytes, _ = json.Marshal(userPointInfoMap)
-    err = ctx.GetStub().PutState("UserPointInfoMap", userPointInfoMapJSONBytes)
-    if err != nil {
-        return fmt.Errorf("failed to put state: %v", err)
-    }
-
-    return nil
-}
 
 // QueryUserPointInfo 根据ID查询用户积分信息
 func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserPointInfo, error) {
     // 从UserPointInfoMap中获取用户积分信息
-    userPointInfoMapJSON, err := ctx.GetStub().GetState("UserPointInfoMap")
+    userPointInfoMapJSON, err := ctx.GetStub().GetState(userID+"_point_info")
     if err != nil {
         return nil, fmt.Errorf("从世界状态读取失败: %v", err)
     }
@@ -75,31 +28,35 @@ func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContex
         return nil, fmt.Errorf("用户积分信息映射不存在")
     }
 
-    var userPointInfoMap map[string]typestruct.UserPointInfo
-    err = json.Unmarshal(userPointInfoMapJSON, &userPointInfoMap)
+    var userPointInfo *typestruct.UserPointInfo
+    err = json.Unmarshal(userPointInfoMapJSON, &userPointInfo)
     if err != nil {
         return nil, fmt.Errorf("解析用户积分信息映射失败: %v", err)
     }
 
-    // 获取指定用户的积分信息
-    userPointInfo, exists := userPointInfoMap[userID]
-    if !exists {
-        return nil, fmt.Errorf("用户 %s 不存在", userID)
-    }
 
-    return &userPointInfo, nil
+
+    return userPointInfo, nil
 }
 
 // PurchaseCTI 用户使用积分购买情报
-func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, ctiID string, userID string, txSignature string, nonceSignature string) error {
+func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txData []byte) error {
+    //解析msgData
+    var purchaseCTITxData msgstruct.PurchaseCtiTxData
+    err := json.Unmarshal(txData, &purchaseCTITxData)
+    if err != nil {
+        return fmt.Errorf("failed to unmarshal msg data: %v", err)
+    }
+
+
     // 获取用户积分信息
-    userPointInfo, err := c.QueryUserPointInfo(ctx, userID)
+    userPointInfo, err := c.QueryUserPointInfo(ctx, purchaseCTITxData.UserID)
     if err != nil {
         return err
     }
 
     // 获取情报信息
-    ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
+    ctiInfo, err := c.QueryCTIInfo(ctx, purchaseCTITxData.CTIID)
     if err != nil {
         return err
     }
@@ -108,27 +65,17 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
     if userPointInfo.UserValue < ctiInfo.Value {
         return fmt.Errorf("insufficient points for purchase")
     }
-
+    userID := purchaseCTITxData.UserID
+    ctiID := purchaseCTITxData.CTIID
     // 更新用户积分信息
     userPointInfo.UserValue -= ctiInfo.Value
     userPointInfo.UserCTIMap[userID] = append(userPointInfo.UserCTIMap[userID], ctiID)
     userPointInfo.CTIBuyMap[ctiID] = ctiInfo.Value
 
-    // 获取UserPointInfoMap
-    var userPointInfoMap map[string]typestruct.UserPointInfo
-    userPointInfoMapJSON, err := ctx.GetStub().GetState("UserPointInfoMap")
-    if err != nil {
-        return fmt.Errorf("failed to get UserPointInfoMap: %v", err)
-    }
-    err = json.Unmarshal(userPointInfoMapJSON, &userPointInfoMap)
-    if err != nil {
-        return fmt.Errorf("failed to unmarshal UserPointInfoMap: %v", err)
-    }
 
-    // 更新UserPointInfoMap
-    userPointInfoMap[userID] = *userPointInfo
-    userPointInfoMapJSONBytes, _ := json.Marshal(userPointInfoMap)
-    err = ctx.GetStub().PutState("UserPointInfoMap", userPointInfoMapJSONBytes)
+    // 更新UserPointInfo
+    userPointInfoMapJSONBytes, _ := json.Marshal(userPointInfo)
+    err = ctx.GetStub().PutState(userID+"_point_info", userPointInfoMapJSONBytes)
     if err != nil {
         return fmt.Errorf("failed to put state: %v", err)
     }
