@@ -56,6 +56,16 @@ func (c *MainContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface,
 	return c.CTIContract.QueryCTIInfo(ctx, ctiID)
 }
 
+// 查询用户上传的情报
+func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, privateKey string) (*typestruct.CtiInfo, error) {
+	return c.CTIContract.QueryCTIInfo(ctx, privateKey)
+}
+
+// 根据cti类别查询
+func (c *MainContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {
+	return c.CTIContract.QueryCTIInfoByType(ctx, ctiType)
+}
+
 // 查询用户信息
 func (c *MainContract) QueryUserInfo(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserInfo, error) {
 	return c.UserContract.QueryUserInfo(ctx, userID)
@@ -66,10 +76,42 @@ func (c *MainContract) QueryUserPointInfo(ctx contractapi.TransactionContextInte
 	return c.UserPointContract.QueryUserPointInfo(ctx, userID)
 }
 
+// 模型信息分页查询
+func (c *MainContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) (string, error) {
+	return c.ModelContract.QueryModelInfoByModelIDWithPagination(ctx, modelIDPrefix, pageSize, bookmark)
+}
+
+// 根据流量类型查询模型信息
+func (c *MainContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, trafficType string) ([]typestruct.ModelInfo, error) {
+	return c.ModelContract.QueryModelsByTrafficType(ctx, trafficType)
+}
+
+// 查询用户所上传的模型信息
+func (c *MainContract) QueryModelsByPrivateKey(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
+	return c.ModelContract.QueryModelInfoByCreatorUserID(ctx, userId)
+}
+
+// 根据相关CTI查询
+func (c *MainContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
+	return c.ModelContract.QueryModelsByRefCTIId(ctx, refCTIId)
+}
+
+
 
 // 分页查询
-func (c *MainContract) QueryAllCTIInfo(ctx contractapi.TransactionContextInterface, page int, pageSize int) ([]typestruct.CtiInfo, error) {
-	return c.CTIContract.QueryAllCTIInfo(ctx, page, pageSize)
+func (c *MainContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
+	return c.CTIContract.QueryCTIInfoByCTIIDWithPagination(ctx, ctiIDPrefix, pageSize, bookmark)
+}
+
+// CTI精简信息
+func (c *MainContract) QueryCTISummaryInfoByCTIID(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiSummaryInfo, error) {
+	return c.DataContract.QueryCTISummaryInfoByCTIID(ctx, ctiID)
+}
+
+// 统计信息
+// 根据相关CTI查询
+func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInterface) (string, error) {
+	return c.DataContract.GetDataStatistics(ctx)
 }
 
 
