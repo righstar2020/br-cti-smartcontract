@@ -42,7 +42,7 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 }
 
 // 注册用户信息
-func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, msgData []byte) error {
+func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, msgData []byte) (string, error) {
 	return c.UserContract.RegisterUser(ctx, msgData)
 }
 
@@ -108,8 +108,7 @@ func (c *MainContract) QueryCTISummaryInfoByCTIID(ctx contractapi.TransactionCon
 	return c.DataContract.QueryCTISummaryInfoByCTIID(ctx, ctiID)
 }
 
-// 统计信息
-// 根据相关CTI查询
+// 统计信息，没有入参
 func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInterface) (string, error) {
 	return c.DataContract.GetDataStatistics(ctx)
 }

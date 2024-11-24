@@ -157,7 +157,7 @@ func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.Transact
 	// 构造返回结构
 	response := struct {
 		CtiInfos []typestruct.CtiInfo `json:"cti_infos"`
-		Bookmark string               `json:"bookmark"`
+		Bookmark string               `json:"bookmark"` // 分页标记
 	}{
 		CtiInfos: ctiInfos,
 		Bookmark: metadata.Bookmark,

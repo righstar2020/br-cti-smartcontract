@@ -3,7 +3,7 @@ package msgstruct
 //不需要签名的消息
 type UserRegisterMsgData struct {
 	UserName string `json:"user_name" default:""` //用户名称
-	PublicKey string `json:"public_key" default:""` //用户公钥
+	PublicKey string `json:"public_key" default:""` //用户公钥(pem string)
 }
 //交易数据结构(需要签名的数据)
 type TxMsgData struct {
