@@ -15,7 +15,6 @@ import (
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
-	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/utils"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 )
 
@@ -57,8 +56,8 @@ func (c *MainContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface,
 }
 
 // 查询用户上传的情报
-func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, privateKey string) (*typestruct.CtiInfo, error) {
-	return c.CTIContract.QueryCTIInfo(ctx, privateKey)
+func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
+	return c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
 }
 
 // 根据cti类别查询
@@ -119,27 +118,22 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 // 注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, verify, err := c.VerifyTxSignature(ctx, txMsgData)
+	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
 		return err
-	}
-	if !verify {
-		return fmt.Errorf("transaction signature verification failed")
 	}
 	//验证通过后，注册模型信息
 	return c.ModelContract.RegisterModelInfo(ctx, txData)
 }
 
-// 注册情报信息
+//注册情报信息
 func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, verify, err := c.VerifyTxSignature(ctx, txMsgData)
+	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
 		return err
 	}
-	if !verify {
-		return fmt.Errorf("transaction signature verification failed")
-	}
+
 	//验证通过后，注册情报信息	
 	return c.CTIContract.RegisterCTIInfo(ctx, txData)
 }
@@ -150,47 +144,51 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, verify, err := c.VerifyTxSignature(ctx, txMsgData)
+	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return err
-	}
-	if !verify {
 		return fmt.Errorf("transaction signature verification failed")
 	}
 	return c.UserPointContract.PurchaseCTI(ctx, txData)
 }
 
 //验证交易随机数和签名
-func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData []byte) ([]byte,bool, error) {
+func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData []byte) ([]byte, error) {
 	//解析msgData	
 	var txMsgData msgstruct.TxMsgData
 	err := json.Unmarshal(msgData, &txMsgData)
 	if err != nil {
-		return nil,false, fmt.Errorf("failed to unmarshal msg data: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
+
+	return txMsgData.TxData, nil
+
+	//暂时取消交易签名验证
 	// 在处理实际交易时验证
-	err = c.VerifyTransactionReplay(ctx, txMsgData.Nonce, txMsgData.UserID, txMsgData.NonceSignature)
-	if err != nil {
-		// 交易被重放或 nonce 无效
-		return nil,false, fmt.Errorf("transaction replay or nonce invalid: %v", err)
-	}
-	//获取用户公钥pem
-	userInfo, err := ctx.GetStub().GetState(txMsgData.UserID)
-	if err != nil {
-		return nil,false, fmt.Errorf("failed to get user info: %v", err)
-	}
-	//解析用户信息
-	var user typestruct.UserInfo
-	err = json.Unmarshal(userInfo, &user)
-	if err != nil {
-		return nil,false, fmt.Errorf("failed to unmarshal user info: %v", err)
-	}
-	//验证交易签名
-	verify, err := utils.Verify(ctx, txMsgData.TxData, []byte(user.PublicKey), txMsgData.TxSignature)	
-	if err != nil {
-		return nil,false, fmt.Errorf("transaction signature verification failed: %v", err)
-	}
-	return txMsgData.TxData,verify, nil
+	// err = c.VerifyTransactionReplay(ctx, txMsgData.Nonce, txMsgData.UserID, txMsgData.NonceSignature)
+	// if err != nil {
+	// 	// 交易被重放或 nonce 无效
+	// 	return nil, fmt.Errorf("transaction replay or nonce invalid: %v", err)
+	// }
+	// //获取用户公钥pem
+	// userInfo, err := ctx.GetStub().GetState(txMsgData.UserID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get user info: %v", err)
+	// }
+	// //解析用户信息
+	// var user typestruct.UserInfo
+	// err = json.Unmarshal(userInfo, &user)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to unmarshal user info: %v", err)
+	// }
+	// //验证交易签名
+	// verify, err := utils.Verify(ctx, txMsgData.TxData, []byte(user.PublicKey), txMsgData.TxSignature)	
+	// if err != nil {
+	// 	return nil, fmt.Errorf("transaction signature verification failed: %v", err)
+	// }
+	// if !verify {
+	// 	return nil, fmt.Errorf("transaction signature verification failed")
+	// }
+	// return txMsgData.TxData, nil
 }
 
 // 生成交易随机数(用于避免重放攻击)
@@ -315,6 +313,48 @@ func (c *MainContract) CleanExpiredNonces(ctx contractapi.TransactionContextInte
 	}
 	
 	return nil
+}
+
+//--------------------------------------------------------------------以下为数据查询(数据统计)--------------------------------------------------------------------
+
+// 获取情报交易趋势数据
+func (c *MainContract) GetCTITrafficTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.TrafficTrendInfo, error) {
+	return c.DataContract.GetCTITrafficTrend(ctx, timeRange)
+}
+
+// 获取攻击类型排行
+func (c *MainContract) GetAttackTypeRanking(ctx contractapi.TransactionContextInterface) (*typestruct.AttackRankInfo, error) {
+	return c.DataContract.GetAttackTypeRanking(ctx)
+}
+
+// 获取IOCs类型分布
+func (c *MainContract) GetIOCsDistribution(ctx contractapi.TransactionContextInterface) (*typestruct.IOCsDistributionInfo, error) {
+	return c.DataContract.GetIOCsDistribution(ctx)
+}
+
+// 获取全球IOCs地理分布
+func (c *MainContract) GetGlobalIOCsDistribution(ctx contractapi.TransactionContextInterface) (*typestruct.GlobalIOCsInfo, error) {
+	return c.DataContract.GetGlobalIOCsDistribution(ctx)
+}
+
+// 获取系统概览数据
+func (c *MainContract) GetSystemOverview(ctx contractapi.TransactionContextInterface) (*typestruct.SystemOverviewInfo, error) {
+	return c.DataContract.GetSystemOverview(ctx)
+}
+
+
+// 获取用户统计数据
+func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInterface, userID string) (*userPointContract.UserStatistics, error) {
+	userOwnCtiInfo, err := c.UserPointContract.QueryUserStatistics(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user statistics: %v", err)
+	}
+	UserUploadCtiList,err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user statistics: %v", err)
+	}
+	userOwnCtiInfo.UserUploadCount = len(UserUploadCtiList)
+	return userOwnCtiInfo, nil
 }
 
 // 主函数

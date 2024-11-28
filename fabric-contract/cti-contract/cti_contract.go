@@ -125,6 +125,42 @@ func (c *CTIContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, 
 	return &ctiInfo, nil
 }
 
+// QueryCTIInfoByCreatorUserID 根据创建者ID查询所有相关情报信息
+func (c *CTIContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
+	// 构建查询字符串，根据创建者ID进行查询
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userID)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	// 定义一个切片存储查询结果
+	var ctiInfos []typestruct.CtiInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get query result: %v", err)
+		}
+
+		// 将查询结果反序列化为 CtiInfo 结构体
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
+		}
+
+		// 将结果追加到切片
+		ctiInfos = append(ctiInfos, ctiInfo)
+	}
+
+	return ctiInfos, nil
+}
+
 func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
 	// 构建查询字符串，匹配以 ctiIDPrefix 开头的 CTIID
 	queryString := fmt.Sprintf(`{"selector":{"cti_id":{"$regex":"^%s"}}}`, ctiIDPrefix)
@@ -171,8 +207,6 @@ func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.Transact
 
 	return string(responseBytes), nil // 返回 JSON 字符串
 }
-
-
 
 // 根据 CTIType 查询所有相关的 CTIInfo
 func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {

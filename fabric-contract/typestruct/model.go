@@ -77,3 +77,41 @@ type ModelInfo struct {
 	ModelCreateTime     string    `json:"model_create_time"`      // 模型创建时间（由合约生成）
 }
 
+// TrafficTrendInfo 交易趋势信息
+type TrafficTrendInfo struct {
+    CTITraffic map[string]int    `json:"cti_traffic"`
+    ModelTraffic map[string]int  `json:"model_traffic"`
+}
+
+// RankItem 排名项
+type RankItem struct {
+    Type string `json:"type"`
+    Count int   `json:"count"`
+}
+
+// AttackRankInfo 攻击类型排名信息
+type AttackRankInfo struct {
+    Rankings []RankItem `json:"rankings"`
+}
+
+// IOCsDistributionInfo IOCs分布信息
+type IOCsDistributionInfo struct {
+    Distribution map[string]float64 `json:"distribution"`
+}
+
+// GlobalIOCsInfo 全球IOCs分布信息
+type GlobalIOCsInfo struct {
+    Regions map[string]int `json:"regions"`
+}
+
+// SystemOverviewInfo 系统概览信息
+type SystemOverviewInfo struct {
+    BlockHeight int       `json:"block_height"`
+    TotalTransactions int `json:"total_transactions"`
+    CTIValue int         `json:"cti_value"`
+    CTICount int         `json:"cti_count"`
+    CTITransactions int  `json:"cti_transactions"`
+    IOCsCount int        `json:"iocs_count"`
+    AccountCount int     `json:"account_count"`
+}
+
