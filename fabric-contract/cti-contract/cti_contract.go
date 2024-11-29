@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"time"
-
-	"github.com/google/uuid"
+	"math/rand"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -65,16 +64,15 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		return fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	
-	// 生成随机的 CTI ID
-	ctiID := uuid.New().String()	
+	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分秒) + 随机数(4位)
+	timestamp := time.Now().Format("060102150405")
+	randomNum := fmt.Sprintf("%04d", rand.Intn(10000))
+	ctiID := fmt.Sprintf("%02d%s%s", ctiTxData.CTIType, timestamp, randomNum)
 
-	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
-	if err != nil {
-		return fmt.Errorf("failed to get transaction timestamp: %v", err)
-	}
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
 		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
+		CTIHash:        ctiTxData.CTIHash,                                                                             // 情报HASH(链下生成)
 		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
 		CTITrafficType: ctiTxData.CTITrafficType,                                                                      // 流量类型
 		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
@@ -84,11 +82,11 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		StatisticInfo:  ctiTxData.StatisticInfo,                                                                         // 统计信息
 		Description:    ctiTxData.Description,                                                                         // 情报描述
 		DataSize:       ctiTxData.DataSize,                                                                            // 数据大小（B）
-		IPFSHash:       ctiTxData.IPFSHash,                                                                                 // IPFS 地址
-		Need:           ctiTxData.Need,                                                                                                 // 情报需求量
-		Value:          ctiTxData.Value,                                                                                                 // 情报价值（积分）
+		IPFSHash:       ctiTxData.IPFSHash,                                                                            // IPFS 地址
+		Need:           ctiTxData.Need,                                                                                // 情报需求量
+		Value:          ctiTxData.Value,                                                                                // 情报价值（积分）
 		CompreValue:    ctiTxData.CompreValue,                                                                                                 // 综合价值（积分激励算法定价）
-		CreateTime:     time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339),              // 情报创建时间
+		CreateTime:     time.Now().Format("2006-01-02 15:04:05"),              											// 情报创建时间
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组
@@ -123,6 +121,38 @@ func (c *CTIContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, 
 	}
 
 	return &ctiInfo, nil
+}
+
+// 根据CTIHash查询情报信息
+func (c *CTIContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextInterface, ctiHash string) (*typestruct.CtiInfo, error) {
+	// 构建查询字符串，根据CTIHash进行查询
+	queryString := fmt.Sprintf(`{"selector":{"cti_hash":"%s"}}`, ctiHash)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	// 遍历查询结果
+	if resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get query result: %v", err)
+		}
+
+		// 将查询结果反序列化为 CtiInfo 结构体
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
+		}
+
+		return &ctiInfo, nil
+	}
+
+	return nil, fmt.Errorf("the cti with hash %s does not exist", ctiHash)
 }
 
 // QueryCTIInfoByCreatorUserID 根据创建者ID查询所有相关情报信息
@@ -160,10 +190,46 @@ func (c *CTIContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionCon
 
 	return ctiInfos, nil
 }
+// 根据 CTIType 查询所有相关的 CTIInfo
+func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {
+	// 构建查询字符串，根据 CTIType 进行查询
+	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
 
-func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
-	// 构建查询字符串，匹配以 ctiIDPrefix 开头的 CTIID
-	queryString := fmt.Sprintf(`{"selector":{"cti_id":{"$regex":"^%s"}}}`, ctiIDPrefix)
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute rich query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	// 定义一个切片存储查询结果
+	var ctiInfos []typestruct.CtiInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get next query result: %v", err)
+		}
+
+		// 将查询结果反序列化为 CtiInfo 结构体
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+		}
+
+		// 将结果追加到切片
+		ctiInfos = append(ctiInfos, ctiInfo)
+	}
+
+	// 返回查询结果
+	return ctiInfos, nil
+}
+
+func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, pageSize int, bookmark string) (string, error) {
+	// 构建查询字符串，根据情报类型查询
+	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
 
 	// 执行带分页的查询
 	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
@@ -208,39 +274,4 @@ func (c *CTIContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.Transact
 	return string(responseBytes), nil // 返回 JSON 字符串
 }
 
-// 根据 CTIType 查询所有相关的 CTIInfo
-func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {
-	// 构建查询字符串，根据 CTIType 进行查询
-	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
 
-	// 执行查询
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute rich query: %v", err)
-	}
-	defer resultsIterator.Close()
-
-	// 定义一个切片存储查询结果
-	var ctiInfos []typestruct.CtiInfo
-
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
-		}
-
-		// 将查询结果反序列化为 CtiInfo 结构体
-		var ctiInfo typestruct.CtiInfo
-		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
-		}
-
-		// 将结果追加到切片
-		ctiInfos = append(ctiInfos, ctiInfo)
-	}
-
-	// 返回查询结果
-	return ctiInfos, nil
-}

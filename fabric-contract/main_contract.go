@@ -55,6 +55,14 @@ func (c *MainContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface,
 	return c.CTIContract.QueryCTIInfo(ctx, ctiID)
 }
 
+// 查询情报信息(hash)
+func (c *MainContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextInterface, ctiHash string) (*typestruct.CtiInfo, error) {
+	return c.CTIContract.QueryCTIInfoByCTIHash(ctx, ctiHash)
+}
+
+
+
+
 // 查询用户上传的情报
 func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	return c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
@@ -97,9 +105,9 @@ func (c *MainContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextI
 
 
 
-// 分页查询
-func (c *MainContract) QueryCTIInfoByCTIIDWithPagination(ctx contractapi.TransactionContextInterface, ctiIDPrefix string, pageSize int, bookmark string) (string, error) {
-	return c.CTIContract.QueryCTIInfoByCTIIDWithPagination(ctx, ctiIDPrefix, pageSize, bookmark)
+// 根据类型分页查询
+func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, pageSize int, bookmark string) (string, error) {
+	return c.CTIContract.QueryCTIInfoByTypeWithPagination(ctx, ctiType, pageSize, bookmark)
 }
 
 // CTI精简信息
