@@ -94,7 +94,7 @@ func (c *MainContract) QueryModelsByTrafficType(ctx contractapi.TransactionConte
 }
 
 // 查询用户所上传的模型信息
-func (c *MainContract) QueryModelsByPrivateKey(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
+func (c *MainContract) QueryModelsByUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
 	return c.ModelContract.QueryModelInfoByCreatorUserID(ctx, userId)
 }
 
