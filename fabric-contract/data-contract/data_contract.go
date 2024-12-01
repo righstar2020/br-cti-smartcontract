@@ -16,40 +16,47 @@ type DataContract struct {
 //在这里写统计数据的函数(每次情报上链都会调用这些函数做统计)
 //需要对外提供查询接口
 
-// QueryCTIInfo 根据ID查询情报信息
-func (c *DataContract) QueryCTISummaryInfoByCTIID(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiSummaryInfo, error) {
-	// 从账本中查询指定 CTIID 的 CtiInfo
-	ctiAsBytes, err := ctx.GetStub().GetState(ctiID)
+// QueryLatestCTISummaryInfo 查询最新的num条情报精简信息
+func (c *DataContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionContextInterface, num int) ([]typestruct.CtiSummaryInfo, error) {
+	// 构建查询字符串,按创建时间倒序排序
+	queryString := `{"selector":{"cti_id":{"$exists":true}}, "sort":[{"create_time":"desc"}], "limit": ` + fmt.Sprintf("%d", num) + `}`
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CTI info: %v", err)
+		return nil, fmt.Errorf("查询CTI数据失败: %v", err)
 	}
-	if ctiAsBytes == nil {
-		return nil, fmt.Errorf("CTI with ID %s does not exist", ctiID)
+	defer resultsIterator.Close()
+
+	var ctiSummaryList []typestruct.CtiSummaryInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("获取下一条CTI数据失败: %v", err)
+		}
+
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			return nil, fmt.Errorf("解析CTI数据失败: %v", err)
+		}
+
+		// 构造精简信息
+		ctiSummary := typestruct.CtiSummaryInfo{
+			CTIId:         ctiInfo.CTIID,
+			CTIHash:       ctiInfo.CTIHash,
+			CTIType:       ctiInfo.CTIType,
+			Tags:          ctiInfo.Tags,
+			CreatorUserID: ctiInfo.CreatorUserID,
+			CreateTime:    ctiInfo.CreateTime,
+		}
+
+		ctiSummaryList = append(ctiSummaryList, ctiSummary)
 	}
 
-	// 反序列化为 CtiInfo 结构体
-	var ctiInfo typestruct.CtiInfo
-	err = json.Unmarshal(ctiAsBytes, &ctiInfo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
-	}
-
-	// 初始化 IOCsDataNum
-	iocsDataNum := make(map[string]int)
-	for _, ioc := range ctiInfo.IOCs {
-		iocsDataNum[ioc]++ // 按类型统计
-	}
-
-	// 构造 CtiSummaryInfo
-	ctiSummary := &typestruct.CtiSummaryInfo{
-		CTIId:         ctiInfo.CTIID,
-		CTIType:       ctiInfo.CTIType,
-		CTITrafficType: ctiInfo.CTITrafficType,
-		IOCsDataNum:   iocsDataNum,
-		DataCreateTime: ctiInfo.CreateTime,
-	}
-
-	return ctiSummary, nil
+	return ctiSummaryList, nil
 }
 
 func (c *DataContract) GetDataStatistics(ctx contractapi.TransactionContextInterface) (string, error) {

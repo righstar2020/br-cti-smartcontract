@@ -112,9 +112,9 @@ func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transact
 	return c.CTIContract.QueryCTIInfoByTypeWithPagination(ctx, ctiType, pageSize, bookmark)
 }
 
-// CTI精简信息
-func (c *MainContract) QueryCTISummaryInfoByCTIID(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiSummaryInfo, error) {
-	return c.DataContract.QueryCTISummaryInfoByCTIID(ctx, ctiID)
+// 查询最新的num条情报精简信息
+func (c *MainContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionContextInterface, limit int) ([]typestruct.CtiSummaryInfo, error) {
+	return c.DataContract.QueryLatestCTISummaryInfo(ctx, limit)
 }
 
 // 统计信息，没有入参

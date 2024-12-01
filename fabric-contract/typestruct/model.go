@@ -29,7 +29,7 @@ type CtiInfo struct {
 	Tags           []string `json:"tags"`             // 情报标签数组
 	IOCs           []string `json:"iocs"`             // 包含的沦陷指标（IP, Port, Payload,URL, Hash）
 	StixData       []byte   `json:"stix_data"`        // STIX数据（JSON []byte）可以有多条
-	StatisticInfo  []byte   `json:"statistic_info"`   // 统计信息(JSON []byte)
+	StatisticInfo  []byte   `json:"statistic_info"`   // 统计信息(JSON []byte) 或者IPFS HASH
 	Description    string   `json:"description"`      // 情报描述
 	DataSize       int      `json:"data_size"`        // 数据大小（B）
 	DataHash       string   `json:"data_hash"`        // 情报数据HASH（sha256）
@@ -52,11 +52,12 @@ type DataSatisticsInfo struct {
 }
 
 type CtiSummaryInfo struct {
-	CTIId          string         `json:"cti_id"`           // 情报ID
+	CTIId          string         `json:"cti_id"`           // 情报ID（链上生成）
+	CTIHash        string         `json:"cti_hash"`         // 情报HASH(sha256链下生成)
 	CTIType        int            `json:"cti_type"`         // 情报类型
-	CTITrafficType int            `json:"cti_traffic_type"` // 情报流量类型
-	IOCsDataNum    map[string]int `json:"iocs_data_num"`    // IOCs分类型数据数量
-	DataCreateTime string         `json:"data_create_time"` // 数据创建时间
+	Tags           []string       `json:"tags"`             // 情报标签数组
+	CreatorUserID  string         `json:"creator_user_id"`  // 创建者ID
+	CreateTime     string         `json:"create_time"`      // 创建时间
 }
 
 // 模型数据结构定义
