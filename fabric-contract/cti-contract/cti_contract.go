@@ -274,4 +274,52 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 	return string(responseBytes), nil // 返回 JSON 字符串
 }
 
+// QueryAllCTIInfoWithPagination 分页查询所有情报信息
+func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
+	// 构建查询字符串，查询所有情报
+	queryString := `{"selector":{}}`
+
+	// 执行带分页的查询
+	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return "", fmt.Errorf("执行分页查询失败: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var ctiInfos []typestruct.CtiInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("获取下一个查询结果失败: %v", err)
+		}
+
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			return "", fmt.Errorf("解析查询结果失败: %v", err)
+		}
+
+		ctiInfos = append(ctiInfos, ctiInfo)
+	}
+
+	// 构造返回结构
+	response := struct {
+		CtiInfos []typestruct.CtiInfo `json:"cti_infos"`
+		Bookmark string               `json:"bookmark"`
+	}{
+		CtiInfos: ctiInfos,
+		Bookmark: metadata.Bookmark,
+	}
+
+	// 序列化为 JSON 字符串
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		return "", fmt.Errorf("序列化响应数据失败: %v", err)
+	}
+
+	return string(responseBytes), nil
+}
+
 

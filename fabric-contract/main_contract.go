@@ -102,8 +102,10 @@ func (c *MainContract) QueryModelsByPrivateKey(ctx contractapi.TransactionContex
 func (c *MainContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
 	return c.ModelContract.QueryModelsByRefCTIId(ctx, refCTIId)
 }
-
-
+//分页查询所有情报信息
+func (c *MainContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
+	return c.CTIContract.QueryAllCTIInfoWithPagination(ctx, pageSize, bookmark)
+}
 
 // 根据类型分页查询
 func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, pageSize int, bookmark string) (string, error) {
