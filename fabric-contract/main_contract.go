@@ -367,6 +367,11 @@ func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInter
 	return userOwnCtiInfo, nil
 }
 
+// 查询用户积分交易记录
+func (c *MainContract) QueryPointTransactions(ctx contractapi.TransactionContextInterface, userID string) ([]*userPointContract.PointTransaction, error) {
+	return c.UserPointContract.QueryPointTransactions(ctx, userID)
+}
+
 // 主函数
 func main() {
 	chaincode, err := contractapi.NewChaincode(&MainContract{})

@@ -5,8 +5,7 @@ import (
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
     "github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"time"
-	"strings"
-	"net"
+
 )
 
 
@@ -134,72 +133,159 @@ func (c *DataContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 
 // GetCTITrafficTrend 获取情报交易趋势数据
 func (c *DataContract) GetCTITrafficTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.TrafficTrendInfo, error) {
-    trend := &typestruct.TrafficTrendInfo{
-        CTITraffic: make(map[string]int),    // 情报交易量
-        ModelTraffic: make(map[string]int),   // 模型交易量
+    trendBytes, err := ctx.GetStub().GetState(TRAFFIC_KEY)
+    if err != nil {
+        return nil, fmt.Errorf("获取交易趋势数据失败: %v", err)
+    }
+
+    var trend typestruct.TrafficTrendInfo
+    if trendBytes != nil {
+        if err := json.Unmarshal(trendBytes, &trend); err != nil {
+            return nil, fmt.Errorf("解析交易趋势数据失败: %v", err)
+        }
+    } else {
+        trend = typestruct.TrafficTrendInfo{
+            CTITraffic: make(map[string]int),
+            ModelTraffic: make(map[string]int),
+        }
+        trendBytes, err := json.Marshal(trend)
+        if err != nil {
+            return nil, fmt.Errorf("序列化交易趋势数据失败: %v", err)
+        }
+        ctx.GetStub().PutState(TRAFFIC_KEY, trendBytes)
     }
     
-    // 根据timeRange查询指定时间范围内的交易数据
-    // 返回按时间分组的交易量统计
-    return trend, nil
+    // 根据timeRange筛选数据
+    // TODO: 实现时间范围过滤逻辑
+    
+    return &trend, nil
 }
 
 // GetAttackTypeRanking 获取攻击类型排行
 func (c *DataContract) GetAttackTypeRanking(ctx contractapi.TransactionContextInterface) (*typestruct.AttackRankInfo, error) {
-    ranking := &typestruct.AttackRankInfo{
-        Rankings: []typestruct.RankItem{
-            {Type: "流量攻击", Count: 0},
-            {Type: "恶意软件", Count: 0},
-            {Type: "钓鱼攻击", Count: 0},
-            {Type: "Botnet", Count: 0},
-            {Type: "应用层攻击", Count: 0},
-        },
+    rankBytes, err := ctx.GetStub().GetState(ATTACK_RANK_KEY)
+    if err != nil {
+        return nil, fmt.Errorf("获取攻击类型排行数据失败: %v", err)
+    }
+
+    var ranking typestruct.AttackRankInfo
+    if rankBytes != nil {
+        if err := json.Unmarshal(rankBytes, &ranking); err != nil {
+            return nil, fmt.Errorf("解析攻击类型排行数据失败: %v", err)
+        }
+    } else {
+        ranking = typestruct.AttackRankInfo{
+            Rankings: []typestruct.RankItem{
+                {Type: "流量攻击", Count: 0},
+                {Type: "恶意软件", Count: 0},
+                {Type: "钓鱼攻击", Count: 0},
+                {Type: "Botnet", Count: 0},
+                {Type: "应用层攻击", Count: 0},
+            },
+        }
+        rankBytes, err := json.Marshal(ranking)
+        if err != nil {
+            return nil, fmt.Errorf("序列化攻击类型排行数据失败: %v", err)
+        }
+        ctx.GetStub().PutState(ATTACK_RANK_KEY, rankBytes)
     }
     
-    // 统计各类型攻击数量并排序
-    return ranking, nil
+    return &ranking, nil
 }
 
 // GetIOCsDistribution 获取IOCs类型分布
 func (c *DataContract) GetIOCsDistribution(ctx contractapi.TransactionContextInterface) (*typestruct.IOCsDistributionInfo, error) {
-    distribution := &typestruct.IOCsDistributionInfo{
-        Distribution: map[string]float64{
-            "IP": 0,
-            "Hash": 0,
-            "Domain": 0,
-            "URL": 0,
-            "CVE": 0,
-        },
+    distBytes, err := ctx.GetStub().GetState(IOCS_DIST_KEY)
+    if err != nil {
+        return nil, fmt.Errorf("获取IOCs分布数据失败: %v", err)
+    }
+
+    var distribution typestruct.IOCsDistributionInfo
+    if distBytes != nil {
+        if err := json.Unmarshal(distBytes, &distribution); err != nil {
+            return nil, fmt.Errorf("解析IOCs分布数据失败: %v", err)
+        }
+    } else {
+        distribution = typestruct.IOCsDistributionInfo{
+            Distribution: map[string]float64{
+                "IP": 0,
+                "Hash": 0,
+                "Domain": 0,
+                "URL": 0,
+                "CVE": 0,
+            },
+        }
+        distBytes, err := json.Marshal(distribution)
+        if err != nil {
+            return nil, fmt.Errorf("序列化IOCs分布数据失败: %v", err)
+        }
+        ctx.GetStub().PutState(IOCS_DIST_KEY, distBytes)
     }
     
-    // 统计各类型IOC的占比
-    return distribution, nil
+    return &distribution, nil
 }
 
 // GetGlobalIOCsDistribution 获取全球IOCs地理分布
 func (c *DataContract) GetGlobalIOCsDistribution(ctx contractapi.TransactionContextInterface) (*typestruct.GlobalIOCsInfo, error) {
-    global := &typestruct.GlobalIOCsInfo{
-        Regions: make(map[string]int),  // 按地区统计IOC数量
+    globalBytes, err := ctx.GetStub().GetState(GLOBAL_IOCS_KEY)
+    if err != nil {
+        return nil, fmt.Errorf("获取全球IOCs分布数据失败: %v", err)
+    }
+
+    var global typestruct.GlobalIOCsInfo
+    if globalBytes != nil {
+        if err := json.Unmarshal(globalBytes, &global); err != nil {
+            return nil, fmt.Errorf("解析全球IOCs分布数据失败: %v", err)
+        }
+    } else {
+        global = typestruct.GlobalIOCsInfo{
+            Regions: make(map[string]int),
+        }
+        globalBytes, err := json.Marshal(global)
+        if err != nil {
+            return nil, fmt.Errorf("序列化全球IOCs分布数据失败: %v", err)
+        }
+        ctx.GetStub().PutState(GLOBAL_IOCS_KEY, globalBytes)
     }
     
-    // 统计各地区的IOC数量
-    return global, nil
+    return &global, nil
 }
 
 // GetSystemOverview 获取系统概览数据
 func (c *DataContract) GetSystemOverview(ctx contractapi.TransactionContextInterface) (*typestruct.SystemOverviewInfo, error) {
-    overview := &typestruct.SystemOverviewInfo{
-        BlockHeight: 0,        // 区块高度
-        TotalTransactions: 0,  // 区块交易总数
-        CTIValue: 0,          // 情报价值总分
-        CTICount: 0,          // 情报数量
-        CTITransactions: 0,    // 情报交易数
-        IOCsCount: 0,         // IOCs数量
-        AccountCount: 0,       // 账户数量
+    overviewBytes, err := ctx.GetStub().GetState(SYSTEM_OVERVIEW_KEY)
+    if err != nil {
+        return nil, fmt.Errorf("获取系统概览数据失败: %v", err)
+    }
+
+    var overview typestruct.SystemOverviewInfo
+    if overviewBytes != nil {
+        if err := json.Unmarshal(overviewBytes, &overview); err != nil {
+            return nil, fmt.Errorf("解析系统概览数据失败: %v", err)
+        }
+    } else {
+        // 初始化系统概览数据
+        overview = typestruct.SystemOverviewInfo{
+            BlockHeight: 0,
+            TotalTransactions: 0,
+            CTIValue: 0,
+            CTICount: 0,
+            CTITransactions: 0,
+            IOCsCount: 0,
+            AccountCount: 0,
+        }
+        
+        // 获取当前区块高度
+        blockHeight := 0
+        overview.BlockHeight = blockHeight
+        overviewBytes, err := json.Marshal(overview)
+        if err != nil {
+            return nil, fmt.Errorf("序列化系统概览数据失败: %v", err)
+        }
+        ctx.GetStub().PutState(SYSTEM_OVERVIEW_KEY, overviewBytes)
     }
     
-    // 获取系统整体统计数据
-    return overview, nil
+    return &overview, nil
 }
 
 // 定义统计数据的key前缀
@@ -355,8 +441,11 @@ func (c *DataContract) updateIOCsDistribution(ctx contractapi.TransactionContext
     total := float64(len(iocs))
     typeCount := make(map[string]int)
     for _, ioc := range iocs {
-        iocType := getIOCType(ioc)
-        typeCount[iocType]++
+        //ioc就是名字
+        if _, ok := typeCount[ioc]; !ok {
+            typeCount[ioc] = 0
+        }
+        typeCount[ioc]++
     }
 
     // 计算百分比
@@ -410,11 +499,11 @@ func (c *DataContract) updateSystemOverview(ctx contractapi.TransactionContextIn
 // 辅助函数
 func getAttackTypeString(ctiType int) string {
     typeMap := map[int]string{
-        1: "流量攻击",
-        2: "恶意软件",
-        3: "钓鱼攻击",
-        4: "Botnet",
-        5: "应用层攻击",
+        1: "恶意流量",
+        2: "蜜罐情报", 
+        3: "僵尸网络",
+        4: "应用层攻击",
+        5: "开源情报",
     }
     if typeName, ok := typeMap[ctiType]; ok {
         return typeName
@@ -422,24 +511,4 @@ func getAttackTypeString(ctiType int) string {
     return "其他"
 }
 
-func getIOCType(ioc string) string {
-    // 这里需要根据实际的IOC格式来判断类型
-    // 这只是一个示例实现
-    if strings.Contains(ioc, ".") {
-        if net.ParseIP(ioc) != nil {
-            return "IP"
-        }
-        return "Domain"
-    }
-    if strings.Contains(ioc, "://") {
-        return "URL"
-    }
-    if strings.HasPrefix(ioc, "CVE-") {
-        return "CVE"
-    }
-    if len(ioc) == 32 || len(ioc) == 40 || len(ioc) == 64 {
-        return "Hash"
-    }
-    return "Other"
-}
 
