@@ -10,22 +10,34 @@ go get github.com/ethereum/go-ethereum/crypto@v1.9.25
 ```
 
 ## 链代码
+### 环境启动
 可参考fabric-sample内教程
 启动环境并选择couchdb数据库
-进入fabric-sample/test-network文件夹
+1.进入fabric-sample/test-network文件夹
 ```shell
 cd ~/go/src/github.com/hyperledger/fabric-samples/test-network
 ```
-启动环境并选择couchdb数据库
+2.停止网络(如网络已启动)
+```shell
+./network.sh down
+```
+3.启动环境并选择couchdb数据库
 ```shell
 ./network.sh up createChannel -s couchdb
 ```
-
-部署合约
+### 合约部署
+4.部署合约(每次更改都需要重启环境)
 ```shell
 ./network.sh deployCC -ccn main_contract -ccp ../br-cti-smartcontract/fabric-contract -ccl go
 ```
-环境变量(证书)配置
+5.查看合约版本
+```shell
+peer lifecycle chaincode querycommitted -C mychannel -n main_contract
+```
+
+
+### 链码执行
+6.环境变量(证书)配置
 ```shell
 export PATH=${PWD}/../bin:$PATH
 export FABRIC_CFG_PATH=$PWD/../config/
@@ -33,13 +45,13 @@ export CORE_PEER_LOCALMSPID="Org1MSP"
 export CORE_PEER_ADDRESS=localhost:7051
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
 export CORE_PEER_TLS_ENABLED=true
-#关闭TLS
-#export CORE_PEER_TLS_ROOTCERT_FILE=""
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export TARGET_TLS_OPTIONS="-o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem --peerAddresses localhost:7051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt --peerAddresses localhost:9051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
 ```
 
-CLI执行链码函数
+
+7.CLI执行链码函数
+
 ```shell
 //调用命令-c后可替换
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n main_contract --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
@@ -48,8 +60,9 @@ peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.exa
 
 
 
-1.查询接口
 
+8.查询接口
+下面 $TARGET_TLS_OPTIONS 有bug暂时无法使用，需要修改
 ```shell  
 //初始化账本
 peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"function":"InitLedger","Args":[]}'
@@ -117,7 +130,7 @@ peer chaincode query $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"fun
 //查询用户积分交易记录
 -c '{"function":"QueryPointTransactions","Args":["用户ID"]}'
 ```
-2.注册接口
+9.注册接口
 ```shell
 //注册CTI
 peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"function":"RegisterCTIInfo","Args":["情报信息JSON"]}'

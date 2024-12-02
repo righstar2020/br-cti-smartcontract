@@ -5,6 +5,15 @@ type UserRegisterMsgData struct {
 	UserName string `json:"user_name" default:""` //用户名称
 	PublicKey string `json:"public_key" default:""` //用户公钥(pem string)
 }
+type TxMsgRawData struct {
+	UserID string `json:"user_id"` //用户ID
+	TxData string`json:"tx_data"` //交易数据
+	Nonce string `json:"nonce"` //随机数(base64)
+	TxSignature string`json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
+	NonceSignature string `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
+}
+
+
 //交易数据结构(需要签名的数据)
 type TxMsgData struct {
 	UserID string `json:"user_id"` //用户ID
@@ -13,6 +22,7 @@ type TxMsgData struct {
 	TxSignature []byte `json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
 	NonceSignature []byte `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
 }
+
 //情报交易数据结构
 type CtiTxData struct {
 	CTIID          string   `json:"cti_id"`           // 情报ID(链上生成)
