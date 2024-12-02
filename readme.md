@@ -30,7 +30,11 @@ cd ~/go/src/github.com/hyperledger/fabric-samples/test-network
 ```shell
 ./network.sh deployCC -ccn main_contract -ccp ../br-cti-smartcontract/fabric-contract -ccl go
 ```
-5.查看合约版本
+5.升级合约
+```shell
+./network.sh deployCC -ccn main_contract -ccp ../br-cti-smartcontract/fabric-contract -ccl go -ccv 1.0
+```
+6.查看合约版本
 ```shell
 peer lifecycle chaincode querycommitted -C mychannel -n main_contract
 ```

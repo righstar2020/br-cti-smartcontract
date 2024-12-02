@@ -282,7 +282,7 @@ func (c *DataContract) GetSystemOverview(ctx contractapi.TransactionContextInter
             AccountCount: 0,
         }
         
-        // 获取当前区块高度
+        // 获取当前区块高度(需要从sdk server中获取)
         blockHeight := 0
         overview.BlockHeight = blockHeight
         overviewBytes, err := json.Marshal(overview)
@@ -486,7 +486,7 @@ func (c *DataContract) updateSystemOverview(ctx contractapi.TransactionContextIn
     overview.CTICount++
     overview.CTIValue += ctiInfo.Value
     overview.IOCsCount += len(ctiInfo.IOCs)
-    // 获取当前区块高度
+    
     blockHeight := 0
 	overview.BlockHeight = blockHeight
     // 获取交易总数

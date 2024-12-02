@@ -56,12 +56,12 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,txData []byte)  error {
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,txData []byte)(*typestruct.CtiInfo,error ){
 	//解析交易数据	
 	var ctiTxData msgstruct.CtiTxData
 	err := json.Unmarshal(txData, &ctiTxData)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal msg data: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	
 	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分秒) + 随机数(4位)
@@ -92,16 +92,16 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	// 将新 CTI 信息序列化为 JSON 字节数组
 	ctiAsBytes, err := json.Marshal(newCTI)
 	if err != nil {
-		return fmt.Errorf("failed to marshal CTI info: %v", err)
+		return nil, fmt.Errorf("failed to marshal CTI info: %v", err)
 	}
 
 	// 使用 CTI ID 作为键将情报数据存储到账本中
 	err = ctx.GetStub().PutState(ctiID, ctiAsBytes)
 	if err != nil {
-		return fmt.Errorf("failed to put CTI info into world state: %v", err)
+		return nil, fmt.Errorf("failed to put CTI info into world state: %v", err)
 	}
-
-	return nil
+	
+	return &newCTI, nil
 }
 
 // QueryCTIInfo 根据ID查询情报信息

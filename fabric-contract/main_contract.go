@@ -125,7 +125,7 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 
 //--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
 
-// 注册模型信息
+//注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
 	txData, err := c.VerifyTxSignature(ctx, txMsgData)
@@ -137,15 +137,29 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 }
 
 //注册情报信息
-func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
+func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
 	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//验证通过后，注册情报信息	
-	return c.CTIContract.RegisterCTIInfo(ctx, txData)
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, txData)
+	if err != nil {
+		return nil, err
+	}
+	//更新CTI相关的所有统计数据
+	err = c.DataContract.UpdateCTIStatistics(ctx, ctiInfo)
+	if err != nil {
+		return ctiInfo, err
+	}
+	//更新用户CTI的统计信息
+	err = c.UserPointContract.UpdateUserCTIStatistics(ctx, ctiInfo.CreatorUserID, 1)
+	if err != nil {
+		return ctiInfo, err
+	}
+	return ctiInfo, nil
 }
 
 
@@ -382,6 +396,8 @@ func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInter
 func (c *MainContract) QueryPointTransactions(ctx contractapi.TransactionContextInterface, userID string) ([]*userPointContract.PointTransaction, error) {
 	return c.UserPointContract.QueryPointTransactions(ctx, userID)
 }
+
+
 
 // 主函数
 func main() {

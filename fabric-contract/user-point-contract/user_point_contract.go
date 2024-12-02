@@ -3,6 +3,7 @@ package user_point_contract
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -33,8 +34,6 @@ func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContex
     if err != nil {
         return nil, fmt.Errorf("解析用户积分信息映射失败: %v", err)
     }
-
-
 
     return userPointInfo, nil
 }
@@ -157,7 +156,61 @@ type UserStatistics struct {
     UserCTICount     int `json:"userCTICount"`     // 我的情报数
     UserUploadCount  int `json:"userUploadCount"`  // 我的上链数
 }
+//更新用户CTI的统计信息
+func (c *UserPointContract)UpdateUserCTIStatistics(ctx contractapi.TransactionContextInterface, userID string, ctiCount int) error {
+    // 获取现有统计数据
+    totalCTICount :=0
+    userCTICount :=0
+    userUploadCount :=0
+    
+    totalCTICountBytes, err := ctx.GetStub().GetState("total_cti_count")
+    if err != nil {
+        return fmt.Errorf("获取总情报数失败: %v", err)
+    }
+    if totalCTICountBytes != nil {
+        err = json.Unmarshal(totalCTICountBytes, &totalCTICount)
+        if err != nil {
+            return fmt.Errorf("解析总情报数失败: %v", err)
+        }
+    }
 
+    // 使用用户ID作为key存储统计数据
+    key := fmt.Sprintf("USER_CTI_STATS_%s", userID)
+    statisticsBytes, err := ctx.GetStub().GetState(key)
+    if err == nil {
+        oldUserStatistics := UserStatistics{}
+        err = json.Unmarshal(statisticsBytes, &oldUserStatistics)
+        if err != nil {
+            return fmt.Errorf("解析用户统计数据失败: %v", err)
+        }
+        totalCTICount = oldUserStatistics.TotalCTICount
+        userCTICount = oldUserStatistics.UserCTICount
+        userUploadCount = oldUserStatistics.UserUploadCount
+    }
+
+    // 更新统计数据
+    userStatistics := UserStatistics{
+        TotalCTICount: totalCTICount+ctiCount,
+        UserCTICount: userCTICount+ctiCount,
+        UserUploadCount: userUploadCount+ctiCount,
+    }
+    // 将统计数据序列化为JSON
+    statisticsBytes, err = json.Marshal(userStatistics)
+    if err != nil {
+        return fmt.Errorf("序列化用户统计数据失败: %v", err)
+    }
+
+    err = ctx.GetStub().PutState(key, statisticsBytes)
+    if err != nil {
+        return fmt.Errorf("保存用户统计数据失败: %v", err)
+    }
+    err = ctx.GetStub().PutState("total_cti_count", []byte(strconv.Itoa(userStatistics.TotalCTICount)))
+    if err != nil {
+        return fmt.Errorf("保存总情报数失败: %v", err)
+    }
+    
+    return nil
+}
 // QueryUserStatistics 查询用户统计数据
 func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionContextInterface, userID string) (*UserStatistics, error) {
     // 获取用户积分信息
