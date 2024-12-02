@@ -41,8 +41,8 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 }
 
 // 注册用户信息
-func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, msgData []byte) (string, error) {
-	return c.UserContract.RegisterUser(ctx, msgData)
+func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, msgData string) (string, error) {
+	return c.UserContract.RegisterUser(ctx, []byte(msgData))
 }
 
 // 查询模型信息
@@ -126,7 +126,7 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 //--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
 
 // 注册模型信息
-func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
+func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
 	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
@@ -137,7 +137,7 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 }
 
 //注册情报信息
-func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
+func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
 	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
@@ -152,7 +152,7 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 
 
 // 用户购买情报
-func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData []byte) error {
+func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
 	txData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
@@ -162,10 +162,10 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 }
 
 //验证交易随机数和签名
-func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData []byte) ([]byte, error) {
+func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData string) ([]byte, error) {
 	//解析msgData	
 	var txMsgData msgstruct.TxMsgData
-	err := json.Unmarshal(msgData, &txMsgData)
+	err := json.Unmarshal([]byte(msgData), &txMsgData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
@@ -202,7 +202,7 @@ func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInter
 }
 
 // 生成交易随机数(用于避免重放攻击)
-func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInterface, userID string, txSignature []byte) (string, error) {
+func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInterface, userID string, txSignature string) (string, error) {
 	// 生成一个随机的 32 字节数组
 	randomBytes := make([]byte, 32)
 	_, err := rand.Read(randomBytes)
@@ -221,7 +221,7 @@ func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInt
 	}{
 		UserID:    userID,
 		Timestamp: time.Now().UTC(),
-		Signature: txSignature,
+		Signature: []byte(txSignature),
 	}
 	
 	// 序列化 nonce 记录
