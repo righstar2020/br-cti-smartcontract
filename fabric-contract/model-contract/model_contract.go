@@ -16,7 +16,7 @@ type ModelContract struct {
 }
 
 // RegisterModelInfo 注册模型信息
-func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface,txData []byte) error {
+func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface,userID string,txData []byte) error {
 	//解析交易数据
 	var modelTxData msgstruct.ModelTxData
 	err := json.Unmarshal(txData, &modelTxData)

@@ -7,7 +7,7 @@ type UserRegisterMsgData struct {
 }
 type TxMsgRawData struct {
 	UserID string `json:"user_id"` //用户ID
-	TxData string`json:"tx_data"` //交易数据
+	TxData string `json:"tx_data"` //交易数据 base64
 	Nonce string `json:"nonce"` //随机数(base64)
 	TxSignature string`json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
 	NonceSignature string `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
@@ -19,8 +19,8 @@ type TxMsgData struct {
 	UserID string `json:"user_id"` //用户ID
 	TxData []byte `json:"tx_data"` //交易数据
 	Nonce string `json:"nonce"` //随机数(base64)
-	TxSignature []byte `json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
-	NonceSignature []byte `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
+	TxSignature string `json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
+	NonceSignature string `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
 }
 
 //情报交易数据结构

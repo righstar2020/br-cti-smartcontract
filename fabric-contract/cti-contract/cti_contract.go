@@ -56,7 +56,7 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,txData []byte)(*typestruct.CtiInfo,error ){
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,userID string,txData []byte)(*typestruct.CtiInfo,error ){
 	//解析交易数据	
 	var ctiTxData msgstruct.CtiTxData
 	err := json.Unmarshal(txData, &ctiTxData)
@@ -74,7 +74,8 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
 		CTIHash:        ctiTxData.CTIHash,                                                                             // 情报HASH(链下生成)
 		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
-		CTITrafficType: ctiTxData.CTITrafficType,                                                                      // 流量类型
+		CTITrafficType: ctiTxData.CTITrafficType,
+		CreatorUserID:  userID,                                                                      // 创建者ID
 		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
 		Tags:           ctiTxData.Tags,                                                                                // 情报标签
 		IOCs:           ctiTxData.IOCs,                                                                                         // 情报IOCs
@@ -83,10 +84,10 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		Description:    ctiTxData.Description,                                                                         // 情报描述
 		DataSize:       ctiTxData.DataSize,                                                                            // 数据大小（B）
 		IPFSHash:       ctiTxData.IPFSHash,                                                                            // IPFS 地址
-		Need:           ctiTxData.Need,                                                                                // 情报需求量
+		Need:           0,                                                                                // 情报需求量
 		Value:          ctiTxData.Value,                                                                                // 情报价值（积分）
-		CompreValue:    ctiTxData.CompreValue,                                                                                                 // 综合价值（积分激励算法定价）
-		CreateTime:     time.Now().Format("2006-01-02 15:04:05"),              											// 情报创建时间
+		CompreValue:    0,                                                                                                 // 综合价值（积分激励算法定价）
+		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),              											// 情报创建时间
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组

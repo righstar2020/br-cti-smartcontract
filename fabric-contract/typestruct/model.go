@@ -12,7 +12,7 @@ type UserInfo struct {
 
 type UserPointInfo struct {
 	UserValue  int                 `json:"user_value"`   //用户积分
-	UserCTIMap map[string][]string `json:"user_cti_map"` //用户拥有的情报map
+	UserCTIMap map[string]int   `json:"user_cti_map"` //用户拥有的情报map
 	CTIBuyMap  map[string]int      `json:"cti_buy_map"`  //用户购买的情报map
 	CTISaleMap map[string]int      `json:"cti_sale_map"` //用户销售的情报map
 }
@@ -114,5 +114,11 @@ type SystemOverviewInfo struct {
     CTITransactions int  `json:"cti_transactions"`
     IOCsCount int        `json:"iocs_count"`
     AccountCount int     `json:"account_count"`
+}
+
+// UpchainTrendInfo 上链趋势信息
+type UpchainTrendInfo struct {
+    CTIUpchain map[string]int    `json:"cti_upchain"`    // 情报上链趋势
+    ModelUpchain map[string]int  `json:"model_upchain"`  // 模型上链趋势
 }
 

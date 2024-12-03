@@ -128,24 +128,24 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 //注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, err := c.VerifyTxSignature(ctx, txMsgData)
+	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
 		return err
 	}
 	//验证通过后，注册模型信息
-	return c.ModelContract.RegisterModelInfo(ctx, txData)
+	return c.ModelContract.RegisterModelInfo(ctx,TxMsgData.UserID,TxMsgData.TxData)
 }
 
 //注册情报信息
 func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, err := c.VerifyTxSignature(ctx, txMsgData)
+	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
 		return nil, err
 	}
 
 	//验证通过后，注册情报信息	
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, txData)
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx,TxMsgData.UserID,TxMsgData.TxData)
 	if err != nil {
 		return nil, err
 	}
@@ -168,34 +168,40 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
-	txData, err := c.VerifyTxSignature(ctx, txMsgData)
+	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
 		return fmt.Errorf("transaction signature verification failed")
 	}
-	return c.UserPointContract.PurchaseCTI(ctx, txData)
+	return c.UserPointContract.PurchaseCTI(ctx, TxMsgData.TxData)
 }
 
 //验证交易随机数和签名
-func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgDataBase64 string) ([]byte, error) {
-	//现base64解码
-	msgData, err := base64.StdEncoding.DecodeString(msgDataBase64)
+func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgDataBase64 string) (*msgstruct.TxMsgData, error) {
+	//base64解码txMsg
+	msgData, err := base64.StdEncoding.DecodeString(msgDataBase64) // 使用base64解码消息数据
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 string: %v", err)
 	}
+	
 	//解析msgData	
 	var txMsgRawData msgstruct.TxMsgRawData
 	err = json.Unmarshal([]byte(msgData), &txMsgRawData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
+	//base64解码TxData
+	TxData, err := base64.StdEncoding.DecodeString(txMsgRawData.TxData) // 使用base64解码消息数据
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode base64 string: %v", err)
+	}
 	txMsgData:=msgstruct.TxMsgData{
 		UserID: txMsgRawData.UserID,
-		TxData: []byte(txMsgRawData.TxData),
+		TxData: []byte(TxData),
 		Nonce: txMsgRawData.Nonce,
-		TxSignature: []byte(txMsgRawData.TxSignature),
-		NonceSignature: []byte(txMsgRawData.NonceSignature),
+		TxSignature: txMsgRawData.TxSignature,
+		NonceSignature: txMsgRawData.NonceSignature,
 	}
-	return txMsgData.TxData, nil
+	return &txMsgData,nil
 
 	//暂时取消交易签名验证
 	// 在处理实际交易时验证
@@ -352,9 +358,9 @@ func (c *MainContract) CleanExpiredNonces(ctx contractapi.TransactionContextInte
 
 //--------------------------------------------------------------------以下为数据查询(数据统计)--------------------------------------------------------------------
 
-// 获取情报交易趋势数据
-func (c *MainContract) GetCTITrafficTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.TrafficTrendInfo, error) {
-	return c.DataContract.GetCTITrafficTrend(ctx, timeRange)
+// 获取情报上链趋势数据
+func (c *MainContract) GetUpchainTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.UpchainTrendInfo, error) {
+	return c.DataContract.GetUpchainTrend(ctx, timeRange)
 }
 
 // 获取攻击类型排行

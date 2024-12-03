@@ -53,7 +53,7 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	if err != nil {
 		return "", fmt.Errorf("failed to get transaction timestamp: %v", err)
 	}
-	createTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339)
+	createTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
 
 	// 创建新的用户对象，初始 value 设置为 0
 	newUser := typestruct.UserInfo{
@@ -77,7 +77,7 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
 		UserValue:   0, // 初始化用户的积分值为 0
-		UserCTIMap: make(map[string][]string),    // 空的CTI映射
+		UserCTIMap: make(map[string]int),    // 空的CTI映射
 		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
 		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}

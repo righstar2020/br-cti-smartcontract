@@ -138,28 +138,28 @@ func (c *DataContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	return string(statsBytes), nil
 }
 
-// GetCTITrafficTrend 获取情报交易趋势数据
-func (c *DataContract) GetCTITrafficTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.TrafficTrendInfo, error) {
-    trendBytes, err := ctx.GetStub().GetState(TRAFFIC_KEY)
+// GetUpchainTrend 获取情报上链趋势数据
+func (c *DataContract) GetUpchainTrend(ctx contractapi.TransactionContextInterface, timeRange string) (*typestruct.UpchainTrendInfo, error) {
+    trendBytes, err := ctx.GetStub().GetState(UPCHAIN_TREND_KEY)
     if err != nil {
-        return nil, fmt.Errorf("获取交易趋势数据失败: %v", err)
+        return nil, fmt.Errorf("获取上链趋势数据失败: %v", err)
     }
 
-    var trend typestruct.TrafficTrendInfo
+    var trend typestruct.UpchainTrendInfo
     if trendBytes != nil {
         if err := json.Unmarshal(trendBytes, &trend); err != nil {
-            return nil, fmt.Errorf("解析交易趋势数据失败: %v", err)
+            return nil, fmt.Errorf("解析上链趋势数据失败: %v", err)
         }
     } else {
-        trend = typestruct.TrafficTrendInfo{
-            CTITraffic: make(map[string]int),
-            ModelTraffic: make(map[string]int),
+        trend = typestruct.UpchainTrendInfo{
+            CTIUpchain: make(map[string]int),
+            ModelUpchain: make(map[string]int),
         }
         trendBytes, err := json.Marshal(trend)
         if err != nil {
-            return nil, fmt.Errorf("序列化交易趋势数据失败: %v", err)
+            return nil, fmt.Errorf("序列化上链趋势数据失败: %v", err)
         }
-        ctx.GetStub().PutState(TRAFFIC_KEY, trendBytes)
+        ctx.GetStub().PutState(UPCHAIN_TREND_KEY, trendBytes)
     }
     
     // 根据timeRange筛选数据
@@ -298,7 +298,7 @@ func (c *DataContract) GetSystemOverview(ctx contractapi.TransactionContextInter
 // 定义统计数据的key前缀
 const (
     STATS_KEY = "STATS"
-    TRAFFIC_KEY = "TRAFFIC"
+    UPCHAIN_TREND_KEY = "UPCHAIN_TREND"
     ATTACK_RANK_KEY = "ATTACK_RANK" 
     IOCS_DIST_KEY = "IOCS_DIST"
     GLOBAL_IOCS_KEY = "GLOBAL_IOCS"
@@ -311,8 +311,8 @@ func (c *DataContract) UpdateCTIStatistics(ctx contractapi.TransactionContextInt
         return fmt.Errorf("failed to update basic stats: %v", err)
     }
     
-    if err := c.updateTrafficTrend(ctx, "CTI"); err != nil {
-        return fmt.Errorf("failed to update traffic trend: %v", err)
+    if err := c.updateUpchainTrend(ctx, "CTI"); err != nil {
+        return fmt.Errorf("failed to update upchain trend: %v", err)
     }
     
     if err := c.updateAttackTypeRanking(ctx, ctiInfo.CTIType); err != nil {
@@ -364,14 +364,14 @@ func (c *DataContract) updateBasicStats(ctx contractapi.TransactionContextInterf
     return ctx.GetStub().PutState(STATS_KEY, statsBytes)
 }
 
-// updateTrafficTrend 更新流量趋势
-func (c *DataContract) updateTrafficTrend(ctx contractapi.TransactionContextInterface, trafficType string) error {
-    trendBytes, err := ctx.GetStub().GetState(TRAFFIC_KEY)
+// updateUpchainTrend 更新上链趋势
+func (c *DataContract) updateUpchainTrend(ctx contractapi.TransactionContextInterface, upchainType string) error {
+    trendBytes, err := ctx.GetStub().GetState(UPCHAIN_TREND_KEY)
     if err != nil {
         return err
     }
 
-    var trend typestruct.TrafficTrendInfo
+    var trend typestruct.UpchainTrendInfo
     if trendBytes != nil {
         if err := json.Unmarshal(trendBytes, &trend); err != nil {
             return err
@@ -379,16 +379,16 @@ func (c *DataContract) updateTrafficTrend(ctx contractapi.TransactionContextInte
     }
 
     today := time.Now().Format("2006-01-02")
-    if trafficType == "CTI" {
-        if trend.CTITraffic == nil {
-            trend.CTITraffic = make(map[string]int)
+    if upchainType == "CTI" {
+        if trend.CTIUpchain == nil {
+            trend.CTIUpchain = make(map[string]int)
         }
-        trend.CTITraffic[today]++
-    } else if trafficType == "Model" {
-        if trend.ModelTraffic == nil {
-            trend.ModelTraffic = make(map[string]int)
+        trend.CTIUpchain[today]++
+    } else if upchainType == "Model" {
+        if trend.ModelUpchain == nil {
+            trend.ModelUpchain = make(map[string]int)
         }
-        trend.ModelTraffic[today]++
+        trend.ModelUpchain[today]++
     }
 
     trendBytes, err = json.Marshal(trend)
@@ -396,7 +396,7 @@ func (c *DataContract) updateTrafficTrend(ctx contractapi.TransactionContextInte
         return err
     }
 
-    return ctx.GetStub().PutState(TRAFFIC_KEY, trendBytes)
+    return ctx.GetStub().PutState(UPCHAIN_TREND_KEY, trendBytes)
 }
 
 // updateAttackTypeRanking 更新攻击类型排行

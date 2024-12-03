@@ -53,10 +53,9 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
     if err != nil {
         return fmt.Errorf("获取卖方积分信息失败: %v", err)
     }
-
     // 更新买方积分信息
     fromPointInfo.UserValue -= points
-    fromPointInfo.UserCTIMap[fromID] = append(fromPointInfo.UserCTIMap[fromID], ctiID)
+    fromPointInfo.UserCTIMap[ctiID] = points
     fromPointInfo.CTIBuyMap[ctiID] = points
 
     // 更新卖方积分信息
@@ -126,6 +125,12 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
     err = c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID)
     if err != nil {
         return fmt.Errorf("创建交易记录失败: %v", err)
+    }
+
+    // 更新CTI交易总数
+    err = c.UpdateCTITransactionCount(ctx)
+    if err != nil {
+        return fmt.Errorf("更新交易计数失败: %v", err)
     }
 
     return nil
@@ -220,10 +225,24 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
     }
 
     // 获取用户拥有的情报数量
-    userCTICount := len(userPointInfo.UserCTIMap[userID])
+    userCTICount := len(userPointInfo.UserCTIMap)
 
     // 获取用户上传的情报数量
-    userUploadCount := 0 //从上层接口获取
+    key := fmt.Sprintf("USER_CTI_STATS_%s", userID)
+    statisticsBytes, err := ctx.GetStub().GetState(key)
+    if err != nil {
+        return nil, fmt.Errorf("获取用户统计数据失败: %v", err)
+    }
+    
+    userUploadCount := 0
+    if statisticsBytes != nil {
+        var stats UserStatistics
+        err = json.Unmarshal(statisticsBytes, &stats)
+        if err != nil {
+            return nil, fmt.Errorf("解析用户统计数据失败: %v", err)
+        }
+        userUploadCount = stats.UserUploadCount
+    }
 
     // 获取链上总情报数量
     // 注：这里需要实现一个计数器或使用其他方式来追踪总情报数
@@ -231,6 +250,7 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
     if err != nil {
         return nil, fmt.Errorf("获取总情报数失败: %v", err)
     }
+
     totalCTICount := 0
     if totalCTICountBytes != nil {
         err = json.Unmarshal(totalCTICountBytes, &totalCTICount)
@@ -250,12 +270,12 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
 
 // PointTransaction 积分交易记录结构
 type PointTransaction struct {
-    TransactionType string    `json:"transactionType"`  // 交易类型：转入/转出
+    TransactionType string    `json:"transaction_type"`  // 交易类型：in/out
     Points         int       `json:"points"`           // 积分数量
-    OtherParty    string    `json:"otherParty"`       // 对方账户
-    InfoID        string    `json:"infoId"`           // 相关情报ID
+    OtherParty    string    `json:"other_party"`       // 对方账户
+    InfoID        string    `json:"info_id"`           // 相关情报ID
     Timestamp     string    `json:"timestamp"`        // 交易时间
-    Status        string    `json:"status"`           // 交易状态
+    Status        string    `json:"status"`           // 交易状态(success/fail)
 }
 
 // QueryPointTransactions 查询用户的积分交易记录
@@ -310,12 +330,12 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
     
     // 支出方交易记录
     outTransaction := &PointTransaction{
-        TransactionType: "转出",
+        TransactionType: "out",
         Points:         -points,
         OtherParty:     toID,
         InfoID:         infoID,
         Timestamp:      timestamp,
-        Status:         "已完成",
+        Status:         "success",
     }
     err := c.AddPointTransaction(ctx, fromID, outTransaction)
     if err != nil {
@@ -324,12 +344,12 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 
     // 收入方交易记录
     inTransaction := &PointTransaction{
-        TransactionType: "转入",
+        TransactionType: "in",
         Points:         points,
         OtherParty:     fromID,
         InfoID:         infoID,
         Timestamp:      timestamp,
-        Status:         "已完成",
+        Status:         "success",
     }
     err = c.AddPointTransaction(ctx, toID, inTransaction)
     if err != nil {
@@ -337,5 +357,80 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
     }
 
     return nil
+}
+
+// UpdateCTITransactionCount 更新CTI交易总数
+func (c *UserPointContract) UpdateCTITransactionCount(ctx contractapi.TransactionContextInterface) error {
+    // 获取当前交易计数
+    key := "total_cti_transactions"
+    countBytes, err := ctx.GetStub().GetState(key)
+    
+    currentCount := 0
+    if err != nil {
+        return fmt.Errorf("获取交易总数失败: %v", err)
+    }
+    if countBytes != nil {
+        currentCount, err = strconv.Atoi(string(countBytes))
+        if err != nil {
+            return fmt.Errorf("解析交易总数失败: %v", err)
+        }
+    }
+    
+    // 增加计数并保存
+    newCount := currentCount + 1
+    err = ctx.GetStub().PutState(key, []byte(strconv.Itoa(newCount)))
+    if err != nil {
+        return fmt.Errorf("保存更新后的交易总数失败: %v", err)
+    }
+    
+    return nil
+}
+
+// GetCTITransactionCount 获取当前CTI交易总数
+func (c *UserPointContract) GetCTITransactionCount(ctx contractapi.TransactionContextInterface) (int, error) {
+    key := "total_cti_transactions"
+    countBytes, err := ctx.GetStub().GetState(key)
+    if err != nil {
+        return 0, fmt.Errorf("获取交易总数失败: %v", err)
+    }
+
+    currentCount := 0
+    if countBytes != nil {
+        currentCount, err = strconv.Atoi(string(countBytes))
+        if err != nil {
+            return 0, fmt.Errorf("解析交易总数失败: %v", err)
+        }
+    }
+
+    return currentCount, nil
+}
+
+// QueryUserPurchasedCTIs 查询用户已购买的CTI信息列表
+func (c *UserPointContract) QueryUserPurchasedCTIs(ctx contractapi.TransactionContextInterface, userID string) ([]*typestruct.CtiInfo, error) {
+    // 获取用户积分信息
+    userPointInfo, err := c.QueryUserPointInfo(ctx, userID)
+    if err != nil {
+        return nil, fmt.Errorf("获取用户积分信息失败: %v", err)
+    }
+
+    // 获取用户购买的CTI ID列表
+    ctiIDs := []string{}
+    for ctiID,_ := range userPointInfo.CTIBuyMap {
+        ctiIDs = append(ctiIDs, ctiID)
+    }
+    if len(ctiIDs) == 0 {
+        return []*typestruct.CtiInfo{}, nil
+    }
+
+    // 查询每个CTI的详细信息
+    var ctiInfoList []*typestruct.CtiInfo
+    for _, ctiID := range ctiIDs {
+        ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
+        if err == nil {
+            ctiInfoList = append(ctiInfoList, ctiInfo)
+        }
+    }
+
+    return ctiInfoList, nil
 }
 
