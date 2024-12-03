@@ -176,16 +176,11 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 }
 
 //验证交易随机数和签名
-func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgDataBase64 string) (*msgstruct.TxMsgData, error) {
-	//base64解码txMsg
-	msgData, err := base64.StdEncoding.DecodeString(msgDataBase64) // 使用base64解码消息数据
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode base64 string: %v", err)
-	}
+func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData string) (*msgstruct.TxMsgData, error) {
 	
 	//解析msgData	
 	var txMsgRawData msgstruct.TxMsgRawData
-	err = json.Unmarshal([]byte(msgData), &txMsgRawData)
+	err := json.Unmarshal([]byte(msgData), &txMsgRawData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
