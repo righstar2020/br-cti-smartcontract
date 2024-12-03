@@ -177,28 +177,28 @@ func (c *UserPointContract)UpdateUserCTIStatistics(ctx contractapi.TransactionCo
         if err != nil {
             return fmt.Errorf("解析总情报数失败: %v", err)
         }
-    }
-
+    } 
+    var userStatistics UserStatistics
     // 使用用户ID作为key存储统计数据
     key := fmt.Sprintf("USER_CTI_STATS_%s", userID)
     statisticsBytes, err := ctx.GetStub().GetState(key)
-    if err == nil {
-        oldUserStatistics := UserStatistics{}
-        err = json.Unmarshal(statisticsBytes, &oldUserStatistics)
+    if err != nil || statisticsBytes == nil {
+        userStatistics = UserStatistics{
+            TotalCTICount: totalCTICount,
+            UserCTICount: 0,
+            UserUploadCount: 0,
+        }
+    }else{
+        err = json.Unmarshal(statisticsBytes, &userStatistics)
         if err != nil {
             return fmt.Errorf("解析用户统计数据失败: %v", err)
         }
-        totalCTICount = oldUserStatistics.TotalCTICount
-        userCTICount = oldUserStatistics.UserCTICount
-        userUploadCount = oldUserStatistics.UserUploadCount
     }
 
     // 更新统计数据
-    userStatistics := UserStatistics{
-        TotalCTICount: totalCTICount+ctiCount,
-        UserCTICount: userCTICount+ctiCount,
-        UserUploadCount: userUploadCount+ctiCount,
-    }
+    userStatistics.TotalCTICount = totalCTICount+ctiCount
+    userStatistics.UserCTICount = userCTICount+ctiCount
+    userStatistics.UserUploadCount = userUploadCount+ctiCount
     // 将统计数据序列化为JSON
     statisticsBytes, err = json.Marshal(userStatistics)
     if err != nil {

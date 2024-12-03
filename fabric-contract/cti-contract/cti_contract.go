@@ -75,7 +75,7 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		CTIHash:        ctiTxData.CTIHash,                                                                             // 情报HASH(链下生成)
 		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
 		CTITrafficType: ctiTxData.CTITrafficType,
-		CreatorUserID:  userID,                                                                      // 创建者ID
+		CreatorUserID:  userID,                                                                                        // 创建者ID
 		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
 		Tags:           ctiTxData.Tags,                                                                                // 情报标签
 		IOCs:           ctiTxData.IOCs,                                                                                         // 情报IOCs

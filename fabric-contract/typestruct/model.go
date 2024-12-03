@@ -97,6 +97,7 @@ type AttackRankInfo struct {
 
 // IOCsDistributionInfo IOCs分布信息
 type IOCsDistributionInfo struct {
+	TotalCountMap map[string]int `json:"total_count_map"`
     Distribution map[string]float64 `json:"distribution"`
 }
 
