@@ -299,7 +299,8 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			return "", fmt.Errorf("解析查询结果失败: %v", err)
+			//解析失败，跳过
+			continue
 		}
 
 		ctiInfos = append(ctiInfos, ctiInfo)
