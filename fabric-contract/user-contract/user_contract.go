@@ -93,7 +93,76 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	if err != nil {
 		return "", fmt.Errorf("failed to put user points into world state: %v", err)
 	}
+
+	// 将新用户ID添加到用户列表中
+	err = c.addUserToAccountList(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to add user to list: %v", err)
+	}
 	return userID, nil
+}
+
+// 新增：将用户ID添加到用户列表中
+func (c *UserContract) addUserToAccountList(ctx contractapi.TransactionContextInterface, userID string) error {
+	// 使用固定的键来存储用户列表
+	const userListKey = "USER_ACCOUNT_LIST_KEY"
+	
+	// 获取现有的用户列表
+	userListBytes, err := ctx.GetStub().GetState(userListKey)
+	var userList []string
+	
+	if err != nil {
+		return fmt.Errorf("failed to read user list: %v", err)
+	}
+	
+	// 如果列表存在，则解析它
+	if userListBytes != nil {
+		err = json.Unmarshal(userListBytes, &userList)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal user list: %v", err)
+		}
+	}
+	
+	// 添加新用户ID到列表
+	userList = append(userList, userID)
+	
+	// 将更新后的列表保存回账本
+	updatedListBytes, err := json.Marshal(userList)
+	if err != nil {
+		return fmt.Errorf("failed to marshal user list: %v", err)
+	}
+	
+	err = ctx.GetStub().PutState(userListKey, updatedListBytes)
+	if err != nil {
+		return fmt.Errorf("failed to save user list: %v", err)
+	}
+	
+	return nil
+}
+
+// 新增：查询所有注册用户的列表
+func (c *UserContract) QueryUserAccountList(ctx contractapi.TransactionContextInterface) ([]string, error) {
+	const userListKey = "USER_ACCOUNT_LIST_KEY"
+	
+	// 获取用户列表
+	userListBytes, err := ctx.GetStub().GetState(userListKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read user list: %v", err)
+	}
+	
+	// 如果列表不存在，返回空列表
+	if userListBytes == nil {
+		return []string{}, nil
+	}
+	
+	// 解析用户列表
+	var userList []string
+	err = json.Unmarshal(userListBytes, &userList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user list: %v", err)
+	}
+	
+	return userList, nil
 }
 
 // QueryUserInfo 根据ID查询用户信息

@@ -375,7 +375,16 @@ func (c *MainContract) GetGlobalIOCsDistribution(ctx contractapi.TransactionCont
 
 // 获取系统概览数据
 func (c *MainContract) GetSystemOverview(ctx contractapi.TransactionContextInterface) (*typestruct.SystemOverviewInfo, error) {
-	return c.DataContract.GetSystemOverview(ctx)
+	systemOverview, err := c.DataContract.GetSystemOverview(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get system overview: %v", err)
+	}
+	userAccountList, err := c.UserContract.QueryUserAccountList(ctx)
+	if err != nil {
+		return systemOverview, err
+	}
+	systemOverview.AccountCount = len(userAccountList)
+	return systemOverview, nil
 }
 
 
@@ -398,6 +407,10 @@ func (c *MainContract) QueryPointTransactions(ctx contractapi.TransactionContext
 	return c.UserPointContract.QueryPointTransactions(ctx, userID)
 }
 
+// 查询所有注册用户的列表
+func (c *MainContract) QueryUserAccountList(ctx contractapi.TransactionContextInterface) ([]string, error) {
+	return c.UserContract.QueryUserAccountList(ctx)
+}
 
 
 // 主函数

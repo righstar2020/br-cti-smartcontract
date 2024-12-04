@@ -175,14 +175,16 @@ func (c *CTIContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionCon
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get query result: %v", err)
+			fmt.Printf("failed to get query result: %v", err)
+			continue
 		}
 
 		// 将查询结果反序列化为 CtiInfo 结构体
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
+			fmt.Printf("failed to unmarshal CTI info: %v", err)
+			continue
 		}
 
 		// 将结果追加到切片
@@ -210,14 +212,16 @@ func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInter
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
+			fmt.Printf("failed to get next query result: %v", err)
+			continue
 		}
 
 		// 将查询结果反序列化为 CtiInfo 结构体
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+			fmt.Printf("failed to unmarshal CTI info: %v", err)
+			continue
 		}
 
 		// 将结果追加到切片
@@ -245,13 +249,15 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("failed to get next query result: %v", err)
+			fmt.Printf("failed to get next query result: %v", err)
+			continue
 		}
 
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			return "", fmt.Errorf("failed to unmarshal query result: %v", err)
+			fmt.Printf("failed to unmarshal query result: %v", err)
+			continue
 		}
 
 		ctiInfos = append(ctiInfos, ctiInfo)
@@ -293,13 +299,15 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("获取下一个查询结果失败: %v", err)
+			fmt.Printf("获取下一个查询结果失败: %v", err)
+			continue
 		}
 
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
 			//解析失败，跳过
+			fmt.Printf("failed to unmarshal query result: %v", err)
 			continue
 		}
 

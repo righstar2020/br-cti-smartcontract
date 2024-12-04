@@ -23,8 +23,8 @@ func (c *DataContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionCont
 		return nil, fmt.Errorf("查询数量必须大于0")
 	}
 
-	// 构建查询字符串,按创建时间倒序排序
-	queryString := `{"selector":{"cti_id":{"$exists":true}}, "sort":[{"create_time":"desc"}], "limit": ` + fmt.Sprintf("%d", num) + `}`
+	// 构建查询字符串
+	queryString := `{"selector":{"cti_id":{"$exists":true}}}`
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
@@ -34,9 +34,10 @@ func (c *DataContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionCont
 	defer resultsIterator.Close()
 
 	var ctiSummaryList []typestruct.CtiSummaryInfo
+	count := 0
 
 	// 遍历查询结果
-	for resultsIterator.HasNext() {
+	for resultsIterator.HasNext() && count < num {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
 			return nil, fmt.Errorf("获取下一条CTI数据失败: %v", err)
@@ -59,6 +60,7 @@ func (c *DataContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionCont
 		}
 
 		ctiSummaryList = append(ctiSummaryList, ctiSummary)
+		count++
 	}
 
 	// 处理空结果
@@ -409,8 +411,8 @@ func (c *DataContract) updateUpchainTrend(ctx contractapi.TransactionContextInte
 		}
 	}
 
-	today := time.Now().Format("2006-01-02")
-	day_and_hour := time.Now().Format("2006-01-02 15")
+	today := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02")
+	day_and_hour := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15")
 	if upchainType == "CTI" {
 		if trend.CTIUpchain == nil {
 			trend.CTIUpchain = make(map[string]int)
