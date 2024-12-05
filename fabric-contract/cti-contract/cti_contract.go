@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"time"
-	"math/rand"
+	"encoding/base64"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -56,7 +56,7 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,userID string,txData []byte)(*typestruct.CtiInfo,error ){
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,userID string,txData []byte,nonce string)(*typestruct.CtiInfo,error ){
 	//解析交易数据	
 	var ctiTxData msgstruct.CtiTxData
 	err := json.Unmarshal(txData, &ctiTxData)
@@ -64,17 +64,32 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	
-	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分秒) + 随机数(4位)
-	timestamp := time.Now().Format("060102150405")
-	randomNum := fmt.Sprintf("%04d", rand.Intn(10000))
-	ctiID := fmt.Sprintf("%02d%s%s", ctiTxData.CTIType, timestamp, randomNum)
+	
+	// 从base64编码的nonce中提取随机数
+	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
+	nonceNum := 100000
+	
+	if err == nil && len(nonceBytes) >= 3 {
+		// 使用前3个字节生成6位随机数
+		nonceNum = int(nonceBytes[0])*10000 + int(nonceBytes[1])*100 + int(nonceBytes[2])
+		nonceNum = nonceNum % 1000000 // 确保是6位数
+	}
+	ctiType:=0
+	if ctiTxData.CTIType!=0{
+		ctiType=ctiTxData.CTIType
+	}
+	timestamp := time.Now().Format("0601021504")
+	randomNum := fmt.Sprintf("%06d", nonceNum)
+	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分) + 随机数(6位)
+	ctiID := fmt.Sprintf("%02d%s%s", ctiType, timestamp, randomNum)
 
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
 		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
 		CTIHash:        ctiTxData.CTIHash,                                                                             // 情报HASH(链下生成)
 		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
-		CTITrafficType: ctiTxData.CTITrafficType,
+		CTIType:        ctiType,                                                                             // 情报类型
+		CTITrafficType: ctiTxData.CTITrafficType,                                                                      // 流量情报类型
 		CreatorUserID:  userID,                                                                                        // 创建者ID
 		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
 		Tags:           ctiTxData.Tags,                                                                                // 情报标签

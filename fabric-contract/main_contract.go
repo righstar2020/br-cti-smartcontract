@@ -133,7 +133,7 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 		return err
 	}
 	//验证通过后，注册模型信息
-	return c.ModelContract.RegisterModelInfo(ctx,TxMsgData.UserID,TxMsgData.TxData)
+	return c.ModelContract.RegisterModelInfo(ctx,TxMsgData.UserID,TxMsgData.TxData,TxMsgData.Nonce)
 }
 
 //注册情报信息
@@ -145,7 +145,7 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 	}
 
 	//验证通过后，注册情报信息	
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx,TxMsgData.UserID,TxMsgData.TxData)
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx,TxMsgData.UserID,TxMsgData.TxData,TxMsgData.Nonce)
 	if err != nil {
 		return nil, err
 	}

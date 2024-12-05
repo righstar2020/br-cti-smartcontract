@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
+	"github.com/google/uuid"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -241,6 +241,7 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
         if err != nil {
             return nil, fmt.Errorf("解析用户统计数据失败: %v", err)
         }
+        userCTICount += stats.UserCTICount
         userUploadCount = stats.UserUploadCount
     }
 
@@ -270,6 +271,7 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
 
 // PointTransaction 积分交易记录结构
 type PointTransaction struct {
+    TransactionID string    `json:"transaction_id"`    // 交易ID
     TransactionType string    `json:"transaction_type"`  // 交易类型：in/out
     Points         int       `json:"points"`           // 积分数量
     OtherParty    string    `json:"other_party"`       // 对方账户
@@ -327,9 +329,10 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
     fromID string, toID string, points int, infoID string) error {
     
     timestamp := time.Now().Format("2006-01-02 15:04")
-    
+    transaction_id := uuid.New().String()
     // 支出方交易记录
     outTransaction := &PointTransaction{
+        TransactionID:  transaction_id,
         TransactionType: "out",
         Points:         -points,
         OtherParty:     toID,
@@ -344,6 +347,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 
     // 收入方交易记录
     inTransaction := &PointTransaction{
+        TransactionID:  transaction_id,
         TransactionType: "in",
         Points:         points,
         OtherParty:     fromID,
