@@ -1,21 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
-	"bytes"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	dataContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/data-contract"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
-	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 )
 
 // 主合约结构体
@@ -37,6 +37,48 @@ type NonceRecord struct {
 
 // 初始化主合约
 func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (string, error) {
+	// 创建用户信息
+	userInfo := typestruct.UserInfo{
+		UserID:        "123456789",                              // 用户公钥的SHA256哈希值（示例）
+		UserName:      "exampleUser",                            // 用户名
+		PublicKey:     "publicKeyExample",                       // 公钥
+		PublicKeyType: "RSA",                                    // 公钥类型（例如：RSA）
+		Value:         100000,                                   // 用户积分
+		CreateTime:    time.Now().Format("2006-01-02 15:04:05"), // 当前创建时间
+	}
+
+	// 创建用户积分信息
+	newUserPointInfo := typestruct.UserPointInfo{
+		UserValue:  100000,               // 初始化用户的积分值为 100000
+		UserCTIMap: make(map[string]int), // 空的CTI映射
+		CTIBuyMap:  make(map[string]int), // 空的CTI购买映射
+		CTISaleMap: make(map[string]int), // 空的CTI销售映射
+	}
+
+	// 将用户信息序列化为JSON字节数组
+	userInfoBytes, err := json.Marshal(userInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal user info: %v", err)
+	}
+
+	// 将用户信息存储到账本中，以 UserID 作为键
+	err = ctx.GetStub().PutState(userInfo.UserID, userInfoBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to put user info into the ledger: %v", err)
+	}
+
+	// 将用户积分信息序列化为JSON字节数组
+	userPointInfoBytes, err := json.Marshal(newUserPointInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal user point info: %v", err)
+	}
+
+	// 将用户积分信息存储到账本中，以 UserID 作为键
+	err = ctx.GetStub().PutState(userInfo.UserID+"_point_info", userPointInfoBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to put user point info into the ledger: %v", err)
+	}
+
 	return "success", nil
 }
 
@@ -60,9 +102,6 @@ func (c *MainContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextI
 	return c.CTIContract.QueryCTIInfoByCTIHash(ctx, ctiHash)
 }
 
-
-
-
 // 查询用户上传的情报
 func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	return c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
@@ -85,11 +124,11 @@ func (c *MainContract) QueryUserPointInfo(ctx contractapi.TransactionContextInte
 
 // 模型信息分页查询
 func (c *MainContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) (string, error) {
-	return c.ModelContract.QueryModelInfoByModelIDWithPagination(ctx, modelIDPrefix, pageSize, bookmark)
+	return c.ModelContract.QueryModelInfoByModelIDWithPagination(ctx, pageSize, bookmark)
 }
 
 // 根据流量类型查询模型信息
-func (c *MainContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, trafficType string) ([]typestruct.ModelInfo, error) {
+func (c *MainContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, trafficType int) ([]typestruct.ModelInfo, error) {
 	return c.ModelContract.QueryModelsByTrafficType(ctx, trafficType)
 }
 
@@ -102,7 +141,8 @@ func (c *MainContract) QueryModelsByUserID(ctx contractapi.TransactionContextInt
 func (c *MainContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
 	return c.ModelContract.QueryModelsByRefCTIId(ctx, refCTIId)
 }
-//分页查询所有情报信息
+
+// 分页查询所有情报信息
 func (c *MainContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
 	return c.CTIContract.QueryAllCTIInfoWithPagination(ctx, pageSize, bookmark)
 }
@@ -122,21 +162,20 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	return c.DataContract.GetDataStatistics(ctx)
 }
 
-
 //--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
 
-//注册模型信息
-func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) error {
+// 注册模型信息
+func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.ModelInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
 	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//验证通过后，注册模型信息
-	return c.ModelContract.RegisterModelInfo(ctx,TxMsgData.UserID,TxMsgData.TxData,TxMsgData.Nonce)
+	return c.ModelContract.RegisterModelInfo(ctx, TxMsgData.UserID, TxMsgData.TxData, TxMsgData.Nonce)
 }
 
-//注册情报信息
+// 注册情报信息
 func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
 	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
@@ -144,8 +183,8 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 		return nil, err
 	}
 
-	//验证通过后，注册情报信息	
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx,TxMsgData.UserID,TxMsgData.TxData,TxMsgData.Nonce)
+	//验证通过后，注册情报信息
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID, TxMsgData.TxData, TxMsgData.Nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -162,9 +201,6 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 	return ctiInfo, nil
 }
 
-
-
-
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) error {
 	//验证交易签名(返回交易数据和验证结果)
@@ -175,10 +211,10 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 	return c.UserPointContract.PurchaseCTI(ctx, TxMsgData.TxData)
 }
 
-//验证交易随机数和签名
+// 验证交易随机数和签名
 func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData string) (*msgstruct.TxMsgData, error) {
-	
-	//解析msgData	
+
+	//解析msgData
 	var txMsgRawData msgstruct.TxMsgRawData
 	err := json.Unmarshal([]byte(msgData), &txMsgRawData)
 	if err != nil {
@@ -189,14 +225,14 @@ func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInter
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 string: %v", err)
 	}
-	txMsgData:=msgstruct.TxMsgData{
-		UserID: txMsgRawData.UserID,
-		TxData: []byte(TxData),
-		Nonce: txMsgRawData.Nonce,
-		TxSignature: txMsgRawData.TxSignature,
+	txMsgData := msgstruct.TxMsgData{
+		UserID:         txMsgRawData.UserID,
+		TxData:         []byte(TxData),
+		Nonce:          txMsgRawData.Nonce,
+		TxSignature:    txMsgRawData.TxSignature,
 		NonceSignature: txMsgRawData.NonceSignature,
 	}
-	return &txMsgData,nil
+	return &txMsgData, nil
 
 	//暂时取消交易签名验证
 	// 在处理实际交易时验证
@@ -217,7 +253,7 @@ func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInter
 	// 	return nil, fmt.Errorf("failed to unmarshal user info: %v", err)
 	// }
 	// //验证交易签名
-	// verify, err := utils.Verify(ctx, txMsgData.TxData, []byte(user.PublicKey), txMsgData.TxSignature)	
+	// verify, err := utils.Verify(ctx, txMsgData.TxData, []byte(user.PublicKey), txMsgData.TxSignature)
 	// if err != nil {
 	// 	return nil, fmt.Errorf("transaction signature verification failed: %v", err)
 	// }
@@ -235,10 +271,10 @@ func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random bytes: %v", err)
 	}
-	
+
 	// 将随机字节转换为 base64 编码的字符串
 	nonce := base64.StdEncoding.EncodeToString(randomBytes)
-	
+
 	// 创建包含时间戳的 nonce 记录
 	nonceRecord := struct {
 		UserID    string    `json:"userId"`
@@ -249,13 +285,13 @@ func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInt
 		Timestamp: time.Now().UTC(),
 		Signature: []byte(txSignature),
 	}
-	
+
 	// 序列化 nonce 记录
 	nonceBytes, err := json.Marshal(nonceRecord)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal nonce record: %v", err)
 	}
-	
+
 	// 检查 nonce 是否已存在
 	existing, err := ctx.GetStub().GetState(nonce)
 	if err != nil {
@@ -264,7 +300,7 @@ func (c *MainContract) GetTransactionNonce(ctx contractapi.TransactionContextInt
 	if existing != nil {
 		return "", fmt.Errorf("nonce already exists")
 	}
-	
+
 	// 保存 nonce 记录
 	err = ctx.GetStub().PutState(nonce, nonceBytes)
 	if err != nil {
@@ -281,40 +317,40 @@ func (c *MainContract) VerifyTransactionReplay(ctx contractapi.TransactionContex
 	if err != nil {
 		return fmt.Errorf("failed to get nonce record: %v", err)
 	}
-	
+
 	// 检查 nonce 是否存在
 	if nonceBytes == nil {
 		return fmt.Errorf("nonce does not exist")
 	}
-	
+
 	// 解析 nonce 记录
 	var nonceRecord NonceRecord
 	err = json.Unmarshal(nonceBytes, &nonceRecord)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal nonce record: %v", err)
 	}
-	
+
 	// 验证用户ID是否匹配
 	if nonceRecord.UserID != userID {
 		return fmt.Errorf("user ID mismatch")
 	}
-	
+
 	// 验证时间戳是否在有效期内（例如：30分钟）
 	if time.Since(nonceRecord.Timestamp) > 30*time.Minute {
 		return fmt.Errorf("nonce has expired")
 	}
-	
+
 	// 验证签名是否匹配
 	if !bytes.Equal(nonceRecord.Signature, txSignature) {
 		return fmt.Errorf("signature mismatch")
 	}
-	
+
 	// 验证通过后，删除已使用的 nonce
 	err = ctx.GetStub().DelState(nonce)
 	if err != nil {
 		return fmt.Errorf("failed to delete used nonce: %v", err)
 	}
-	
+
 	return nil
 }
 
@@ -326,19 +362,19 @@ func (c *MainContract) CleanExpiredNonces(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to get nonce iterator: %v", err)
 	}
 	defer iterator.Close()
-	
+
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
 			return fmt.Errorf("failed to iterate nonces: %v", err)
 		}
-		
+
 		var nonceRecord NonceRecord
 		err = json.Unmarshal(kv.Value, &nonceRecord)
 		if err != nil {
 			continue // 跳过无法解析的记录
 		}
-		
+
 		// 如果 nonce 已过期（例如：30分钟），则删除
 		if time.Since(nonceRecord.Timestamp) > 30*time.Minute {
 			err = ctx.GetStub().DelState(kv.Key)
@@ -347,7 +383,7 @@ func (c *MainContract) CleanExpiredNonces(ctx contractapi.TransactionContextInte
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -387,14 +423,13 @@ func (c *MainContract) GetSystemOverview(ctx contractapi.TransactionContextInter
 	return systemOverview, nil
 }
 
-
 // 获取用户统计数据
 func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInterface, userID string) (*userPointContract.UserStatistics, error) {
 	userOwnCtiInfo, err := c.UserPointContract.QueryUserStatistics(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user statistics: %v", err)
 	}
-	UserUploadCtiList,err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
+	UserUploadCtiList, err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user statistics: %v", err)
 	}
@@ -411,7 +446,6 @@ func (c *MainContract) QueryPointTransactions(ctx contractapi.TransactionContext
 func (c *MainContract) QueryUserAccountList(ctx contractapi.TransactionContextInterface) ([]string, error) {
 	return c.UserContract.QueryUserAccountList(ctx)
 }
-
 
 // 主函数
 func main() {

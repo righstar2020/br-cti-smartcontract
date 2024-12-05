@@ -83,7 +83,7 @@ func (c *DataContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	}
 
 	// 查询所有 CTI 信息
-	ctiQuery := `{"selector":{"cti_id":{"$exists":true}}}`
+	ctiQuery := `{"selector":{"doctype":"cti"}}`
 	ctiIterator, err := ctx.GetStub().GetQueryResult(ctiQuery)
 	if err != nil {
 		return "", fmt.Errorf("failed to query CTI data: %v", err)
@@ -117,7 +117,7 @@ func (c *DataContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	}
 
 	// 查询所有 Model 信息
-	modelQuery := `{"selector":{"model_id":{"$exists":true}}}`
+	modelQuery := `{"selector":{"doctype":"model"}}`
 	modelIterator, err := ctx.GetStub().GetQueryResult(modelQuery)
 	if err != nil {
 		return "", fmt.Errorf("failed to query Model data: %v", err)
@@ -503,7 +503,7 @@ func (c *DataContract) updateIOCsDistribution(ctx contractapi.TransactionContext
 	} else {
 		distribution = typestruct.IOCsDistributionInfo{
 			TotalCountMap: make(map[string]int),
-			Distribution: make(map[string]float64),
+			Distribution:  make(map[string]float64),
 		}
 	}
 

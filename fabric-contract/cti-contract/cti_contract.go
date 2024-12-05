@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"time"
 	"encoding/base64"
+	"time"
+
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -56,53 +57,53 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface,userID string,txData []byte,nonce string)(*typestruct.CtiInfo,error ){
-	//解析交易数据	
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, userID string, txData []byte, nonce string) (*typestruct.CtiInfo, error) {
+	//解析交易数据
 	var ctiTxData msgstruct.CtiTxData
 	err := json.Unmarshal(txData, &ctiTxData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
-	
-	
+
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
 	nonceNum := 100000
-	
+
 	if err == nil && len(nonceBytes) >= 3 {
 		// 使用前3个字节生成6位随机数
 		nonceNum = int(nonceBytes[0])*10000 + int(nonceBytes[1])*100 + int(nonceBytes[2])
 		nonceNum = nonceNum % 1000000 // 确保是6位数
 	}
-	ctiType:=0
-	if ctiTxData.CTIType!=0{
-		ctiType=ctiTxData.CTIType
+	ctiType := 0
+	if ctiTxData.CTIType != 0 {
+		ctiType = ctiTxData.CTIType
 	}
 	timestamp := time.Now().Format("0601021504")
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分) + 随机数(6位)
 	ctiID := fmt.Sprintf("%02d%s%s", ctiType, timestamp, randomNum)
-
+	doctype := "cti"
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
-		CTIID:          ctiID,                                                                               // 生成唯一的 CTI ID
-		CTIHash:        ctiTxData.CTIHash,                                                                             // 情报HASH(链下生成)
-		CTIName:        ctiTxData.CTIName,                                                                             // 情报名称
-		CTIType:        ctiType,                                                                             // 情报类型
-		CTITrafficType: ctiTxData.CTITrafficType,                                                                      // 流量情报类型
-		CreatorUserID:  userID,                                                                                        // 创建者ID
-		OpenSource:     ctiTxData.OpenSource,                                                                          // 是否开源
-		Tags:           ctiTxData.Tags,                                                                                // 情报标签
-		IOCs:           ctiTxData.IOCs,                                                                                         // 情报IOCs
-		StixData:       ctiTxData.StixData,                                                                            // STIX数据
-		StatisticInfo:  ctiTxData.StatisticInfo,                                                                         // 统计信息
-		Description:    ctiTxData.Description,                                                                         // 情报描述
-		DataSize:       ctiTxData.DataSize,                                                                            // 数据大小（B）
-		IPFSHash:       ctiTxData.IPFSHash,                                                                            // IPFS 地址
-		Need:           0,                                                                                // 情报需求量
-		Value:          ctiTxData.Value,                                                                                // 情报价值（积分）
-		CompreValue:    0,                                                                                                 // 综合价值（积分激励算法定价）
-		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),              											// 情报创建时间
+		CTIID:          ctiID,                                                                      // 生成唯一的 CTI ID
+		CTIHash:        ctiTxData.CTIHash,                                                          // 情报HASH(链下生成)
+		CTIName:        ctiTxData.CTIName,                                                          // 情报名称
+		CTIType:        ctiType,                                                                    // 情报类型
+		CTITrafficType: ctiTxData.CTITrafficType,                                                   // 流量情报类型
+		CreatorUserID:  userID,                                                                     // 创建者ID
+		OpenSource:     ctiTxData.OpenSource,                                                       // 是否开源
+		Tags:           ctiTxData.Tags,                                                             // 情报标签
+		IOCs:           ctiTxData.IOCs,                                                             // 情报IOCs
+		StixData:       ctiTxData.StixData,                                                         // STIX数据
+		StatisticInfo:  ctiTxData.StatisticInfo,                                                    // 统计信息
+		Description:    ctiTxData.Description,                                                      // 情报描述
+		DataSize:       ctiTxData.DataSize,                                                         // 数据大小（B）
+		IPFSHash:       ctiTxData.IPFSHash,                                                         // IPFS 地址
+		Need:           0,                                                                          // 情报需求量
+		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
+		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）
+		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
+		Doctype:        doctype,
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组
@@ -116,28 +117,32 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	if err != nil {
 		return nil, fmt.Errorf("failed to put CTI info into world state: %v", err)
 	}
-	
+
 	return &newCTI, nil
 }
 
-// QueryCTIInfo 根据ID查询情报信息
 func (c *CTIContract) QueryCTIInfo(ctx contractapi.TransactionContextInterface, ctiID string) (*typestruct.CtiInfo, error) {
-	ctiInfoJSON, err := ctx.GetStub().GetState(ctiID)
+	// 根据 CTIID 查询数据
+	ctiAsBytes, err := ctx.GetStub().GetState(ctiID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
+		return nil, fmt.Errorf("failed to get state for CTI with ID %s: %v", ctiID, err)
 	}
-	if ctiInfoJSON == nil {
-		return nil, fmt.Errorf("the cti %s does not exist", ctiID)
+	if ctiAsBytes == nil {
+		return nil, fmt.Errorf("the CTI with ID %s does not exist", ctiID)
 	}
 
+	// 将获取到的字节数据反序列化为 CtiInfo 结构体
 	var ctiInfo typestruct.CtiInfo
-	err = json.Unmarshal(ctiInfoJSON, &ctiInfo)
+	err = json.Unmarshal(ctiAsBytes, &ctiInfo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cti info: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
 	}
 
+	// 返回查询到的 CTI 信息
 	return &ctiInfo, nil
 }
+
+
 
 // 根据CTIHash查询情报信息
 func (c *CTIContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextInterface, ctiHash string) (*typestruct.CtiInfo, error) {
@@ -208,6 +213,7 @@ func (c *CTIContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionCon
 
 	return ctiInfos, nil
 }
+
 // 根据 CTIType 查询所有相关的 CTIInfo
 func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {
 	// 构建查询字符串，根据 CTIType 进行查询
@@ -298,8 +304,8 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 
 // QueryAllCTIInfoWithPagination 分页查询所有情报信息
 func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
-	// 构建查询字符串，查询所有情报
-	queryString := `{"selector":{}}`
+	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报
+	queryString := `{"selector":{"doctype":"cti"}}`
 
 	// 执行带分页的查询
 	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
@@ -346,5 +352,4 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 
 	return string(responseBytes), nil
 }
-
 

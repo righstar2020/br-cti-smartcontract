@@ -2,19 +2,19 @@ package typestruct
 
 // 用户结构
 type UserInfo struct {
-	UserID         string `json:"user_id"` //用户ID(公钥sha256)
-	UserName       string `json:"user_name"` //用户名
-	PublicKey      string `json:"public_key"` //用户公钥
-	PublicKeyType  string `json:"public_key_type"` //用户公钥类型
-	Value          int    `json:"value"` //用户积分
-	CreateTime     string `json:"create_time"` //用户创建时间
+	UserID        string `json:"user_id"`         //用户ID(公钥sha256)
+	UserName      string `json:"user_name"`       //用户名
+	PublicKey     string `json:"public_key"`      //用户公钥
+	PublicKeyType string `json:"public_key_type"` //用户公钥类型
+	Value         int    `json:"value"`           //用户积分
+	CreateTime    string `json:"create_time"`     //用户创建时间
 }
 
 type UserPointInfo struct {
-	UserValue  int                 `json:"user_value"`   //用户积分
-	UserCTIMap map[string]int   `json:"user_cti_map"` //用户拥有的情报map
-	CTIBuyMap  map[string]int      `json:"cti_buy_map"`  //用户购买的情报map
-	CTISaleMap map[string]int      `json:"cti_sale_map"` //用户销售的情报map
+	UserValue  int            `json:"user_value"`   //用户积分
+	UserCTIMap map[string]int `json:"user_cti_map"` //用户拥有的情报map
+	CTIBuyMap  map[string]int `json:"cti_buy_map"`  //用户购买的情报map
+	CTISaleMap map[string]int `json:"cti_sale_map"` //用户销售的情报map
 }
 
 // 情报数据结构定义
@@ -38,9 +38,8 @@ type CtiInfo struct {
 	Value          int      `json:"value"`            // 情报价值（积分）
 	CompreValue    int      `json:"compre_value"`     // 综合价值（积分激励算法定价）
 	CreateTime     string   `json:"create_time"`      // 情报创建时间（由合约生成）
+	Doctype        string      `json:"doctype"`          // 文档类型
 }
-
-
 
 type DataSatisticsInfo struct {
 	TotalCtiDataNum    int            `json:"total_cti_data_num"`    // 情报数据总数
@@ -52,74 +51,73 @@ type DataSatisticsInfo struct {
 }
 
 type CtiSummaryInfo struct {
-	CTIId          string         `json:"cti_id"`           // 情报ID（链上生成）
-	CTIHash        string         `json:"cti_hash"`         // 情报HASH(sha256链下生成)
-	CTIType        int            `json:"cti_type"`         // 情报类型
-	Tags           []string       `json:"tags"`             // 情报标签数组
-	CreatorUserID  string         `json:"creator_user_id"`  // 创建者ID
-	CreateTime     string         `json:"create_time"`      // 创建时间
+	CTIId         string   `json:"cti_id"`          // 情报ID（链上生成）
+	CTIHash       string   `json:"cti_hash"`        // 情报HASH(sha256链下生成)
+	CTIType       int      `json:"cti_type"`        // 情报类型
+	Tags          []string `json:"tags"`            // 情报标签数组
+	CreatorUserID string   `json:"creator_user_id"` // 创建者ID
+	CreateTime    string   `json:"create_time"`     // 创建时间
 }
 
 // 模型数据结构定义
 type ModelInfo struct {
-	ModelID          	string   `json:"model_id"`           // 模型ID(链上生成)
-	ModelHash        	string   `json:"model_hash"`         // 模型HASH(sha256链下生成)
-	ModelName        	string   `json:"model_name"`         // 模型名称(可为空)
-	ModelType        	int      `json:"model_type"`         // 模型类型（1-10）10是流量类型的情报
-	ModelTrafficType 	int      `json:"model_traffic_type"` // 流量情报（0：非流量、1：卫星网络、2：5G、3：SDN）
-	ModelOpenSource  	int      `json:"model_open_source"`  // 是否开源（0不开源，1开源）
-	ModelCreatorUserID  string   `json:"model_creator_user_id"`  // 创建者ID(公钥sha256)
-	ModelFeatures       []string   `json:"model_features"`          // 模型特征字段
-	ModelTags           []string `json:"model_tags"`             // 模型标签数组
-	ModelDescription    string    `json:"model_description"`      // 模型描述
-	ModelDataSize       int       `json:"model_data_size"`        // 数据大小（B）
-	ModelDataHash       string    `json:"model_data_hash"`        // 模型数据HASH（sha256）
-	ModelIPFSHash       string    `json:"model_ipfs_hash"`        // IPFS地址
-	ModelCreateTime     string    `json:"model_create_time"`      // 模型创建时间（由合约生成）
+	ModelID            string   `json:"model_id"`              // 模型ID(链上生成)
+	ModelHash          string   `json:"model_hash"`            // 模型HASH(sha256链下生成)
+	ModelName          string   `json:"model_name"`            // 模型名称(可为空)
+	ModelType          int      `json:"model_type"`            // 模型类型（1-10）10是流量类型的情报
+	ModelTrafficType   int      `json:"model_traffic_type"`    // 流量情报（0：非流量、1：卫星网络、2：5G、3：SDN）
+	ModelOpenSource    int      `json:"model_open_source"`     // 是否开源（0不开源，1开源）
+	ModelCreatorUserID string   `json:"model_creator_user_id"` // 创建者ID(公钥sha256)
+	ModelFeatures      []string `json:"model_features"`        // 模型特征字段
+	ModelTags          []string `json:"model_tags"`            // 模型标签数组
+	ModelDescription   string   `json:"model_description"`     // 模型描述
+	ModelDataSize      int      `json:"model_data_size"`       // 数据大小（B）
+	ModelIPFSHash      string   `json:"model_ipfs_hash"`       // IPFS地址
+	ModelCreateTime    string   `json:"model_create_time"`     // 模型创建时间（由合约生成）
+	Doctype        string      `json:"doctype"`          // 文档类型
 }
 
 // TrafficTrendInfo 交易趋势信息
 type TrafficTrendInfo struct {
-    CTITraffic map[string]int    `json:"cti_traffic"`
-    ModelTraffic map[string]int  `json:"model_traffic"`
+	CTITraffic   map[string]int `json:"cti_traffic"`
+	ModelTraffic map[string]int `json:"model_traffic"`
 }
 
 // RankItem 排名项
 type RankItem struct {
-    Type string `json:"type"`
-    Count int   `json:"count"`
+	Type  string `json:"type"`
+	Count int    `json:"count"`
 }
 
 // AttackRankInfo 攻击类型排名信息
 type AttackRankInfo struct {
-    Rankings []RankItem `json:"rankings"`
+	Rankings []RankItem `json:"rankings"`
 }
 
 // IOCsDistributionInfo IOCs分布信息
 type IOCsDistributionInfo struct {
-	TotalCountMap map[string]int `json:"total_count_map"`
-    Distribution map[string]float64 `json:"distribution"`
+	TotalCountMap map[string]int     `json:"total_count_map"`
+	Distribution  map[string]float64 `json:"distribution"`
 }
 
 // GlobalIOCsInfo 全球IOCs分布信息
 type GlobalIOCsInfo struct {
-    Regions map[string]int `json:"regions"`
+	Regions map[string]int `json:"regions"`
 }
 
 // SystemOverviewInfo 系统概览信息
 type SystemOverviewInfo struct {
-    BlockHeight int       `json:"block_height"`
-    TotalTransactions int `json:"total_transactions"`
-    CTIValue int         `json:"cti_value"`
-    CTICount int         `json:"cti_count"`
-    CTITransactions int  `json:"cti_transactions"`
-    IOCsCount int        `json:"iocs_count"`
-    AccountCount int     `json:"account_count"`
+	BlockHeight       int `json:"block_height"`
+	TotalTransactions int `json:"total_transactions"`
+	CTIValue          int `json:"cti_value"`
+	CTICount          int `json:"cti_count"`
+	CTITransactions   int `json:"cti_transactions"`
+	IOCsCount         int `json:"iocs_count"`
+	AccountCount      int `json:"account_count"`
 }
 
 // UpchainTrendInfo 上链趋势信息
 type UpchainTrendInfo struct {
-    CTIUpchain map[string]int    `json:"cti_upchain"`    // 情报上链趋势
-    ModelUpchain map[string]int  `json:"model_upchain"`  // 模型上链趋势
+	CTIUpchain   map[string]int `json:"cti_upchain"`   // 情报上链趋势
+	ModelUpchain map[string]int `json:"model_upchain"` // 模型上链趋势
 }
-
