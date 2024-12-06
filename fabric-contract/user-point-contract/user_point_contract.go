@@ -11,11 +11,13 @@ import (
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
+	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
 )
 
 // UserPointContract 是积分合约的结构体
 type UserPointContract struct {
 	ctiContract.CTIContract
+	modelContract.ModelContract
 }
 
 //注册用户积分
@@ -138,6 +140,50 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 
 	return transaction_id,nil
 }
+// 购买模型
+func (c *UserPointContract) PurchaseModel(ctx contractapi.TransactionContextInterface, purchaseModelTxData msgstruct.PurchaseModelTxData, nonce string) (string,error) {
+	// 获取用户积分信息
+	userPointInfo, err := c.QueryUserPointInfo(ctx, purchaseModelTxData.UserID)
+	if err != nil {
+		return "",err
+	}
+
+	// 获取模型信息
+	modelInfo, err := c.QueryModelInfo(ctx, purchaseModelTxData.ModelID)
+	if err != nil {
+		return "",err
+	}
+
+	// 检查用户是否有足够的积分
+	if userPointInfo.UserValue < modelInfo.Value {
+		return "",fmt.Errorf("insufficient points for purchase")
+	}
+
+	userID := purchaseModelTxData.UserID
+	modelID := purchaseModelTxData.ModelID
+	sellerID := modelInfo.CreatorUserID
+
+	// 处理积分转移
+	err = c.TransferPoints(ctx, userID, sellerID, modelInfo.Value, modelID)
+	if err != nil {
+		return "",fmt.Errorf("积分转移失败: %v", err)
+	}
+
+	// 创建交易记录
+	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, modelInfo.Value, modelID, nonce)
+	if err != nil {
+		return "",fmt.Errorf("创建交易记录失败: %v", err)
+	}
+
+	// 更新模型交易总数
+	err = c.UpdateModelTransactionCount(ctx)
+	if err != nil {
+		return transaction_id,fmt.Errorf("更新交易计数失败: %v", err)
+	}
+
+	return transaction_id,nil
+}
+
 
 // UserStatistics 用户统计数据结构
 type UserStatistics struct {
@@ -385,6 +431,32 @@ func (c *UserPointContract) UpdateCTITransactionCount(ctx contractapi.Transactio
 
 	return nil
 }
+// UpdateModelTransactionCount 更新模型交易总数
+func (c *UserPointContract) UpdateModelTransactionCount(ctx contractapi.TransactionContextInterface) error {
+	// 获取当前交易计数
+	key := "total_model_transactions"
+	countBytes, err := ctx.GetStub().GetState(key)
+
+	currentCount := 0
+	if err != nil {
+		return fmt.Errorf("获取交易总数失败: %v", err)
+	}
+	if countBytes != nil {
+		currentCount, err = strconv.Atoi(string(countBytes))
+		if err != nil {
+			return fmt.Errorf("解析交易总数失败: %v", err)
+		}
+	}
+
+	// 增加计数并保存
+	newCount := currentCount + 1
+	err = ctx.GetStub().PutState(key, []byte(strconv.Itoa(newCount)))
+	if err != nil {
+		return fmt.Errorf("保存更新后的交易总数失败: %v", err)
+	}
+
+	return nil
+}
 
 // GetCTITransactionCount 获取当前CTI交易总数
 func (c *UserPointContract) GetCTITransactionCount(ctx contractapi.TransactionContextInterface) (int, error) {
@@ -406,7 +478,7 @@ func (c *UserPointContract) GetCTITransactionCount(ctx contractapi.TransactionCo
 }
 
 // QueryUserPurchasedCTIs 查询用户已购买的CTI信息列表
-func (c *UserPointContract) QueryUserPurchasedCTIs(ctx contractapi.TransactionContextInterface, userID string) ([]*typestruct.CtiInfo, error) {
+func (c *UserPointContract) QueryUserPurchasedCTIs(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	// 获取用户积分信息
 	userPointInfo, err := c.QueryUserPointInfo(ctx, userID)
 	if err != nil {
@@ -419,17 +491,80 @@ func (c *UserPointContract) QueryUserPurchasedCTIs(ctx contractapi.TransactionCo
 		ctiIDs = append(ctiIDs, ctiID)
 	}
 	if len(ctiIDs) == 0 {
-		return []*typestruct.CtiInfo{}, nil
+		return []typestruct.CtiInfo{}, nil
 	}
 
 	// 查询每个CTI的详细信息
-	var ctiInfoList []*typestruct.CtiInfo
+	var ctiInfoList []typestruct.CtiInfo
 	for _, ctiID := range ctiIDs {
 		ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
 		if err == nil {
-			ctiInfoList = append(ctiInfoList, ctiInfo)
+			ctiInfoList = append(ctiInfoList, *ctiInfo)
 		}
 	}
 
 	return ctiInfoList, nil
+}
+
+// UserModelStatistics 用户模型统计数据结构
+type UserModelStatistics struct {
+	TotalModelCount   int `json:"totalModelCount"`   // 链上总模型数
+	UserModelCount    int `json:"userModelCount"`    // 我的模型数
+	UserUploadCount   int `json:"userUploadCount"`   // 我的上链数
+}
+
+// UpdateUserModelStatistics 更新用户模型的统计信息
+func (c *UserPointContract) UpdateUserModelStatistics(ctx contractapi.TransactionContextInterface, userID string, modelCount int) error {
+	// 获取现有统计数据
+	totalModelCount := 0
+	
+	totalModelCountBytes, err := ctx.GetStub().GetState("total_model_count")
+	if err != nil {
+		return fmt.Errorf("获取总模型数失败: %v", err)
+	}
+	if totalModelCountBytes != nil {
+		err = json.Unmarshal(totalModelCountBytes, &totalModelCount)
+		if err != nil {
+			return fmt.Errorf("解析总模型数失败: %v", err)
+		}
+	}
+
+	var userStatistics UserModelStatistics
+	// 使用用户ID作为key存储统计数据
+	key := fmt.Sprintf("USER_MODEL_STATS_%s", userID)
+	statisticsBytes, err := ctx.GetStub().GetState(key)
+	if err != nil || statisticsBytes == nil {
+		userStatistics = UserModelStatistics{
+			TotalModelCount: totalModelCount,
+			UserModelCount:  0,
+			UserUploadCount: 0,
+		}
+	} else {
+		err = json.Unmarshal(statisticsBytes, &userStatistics)
+		if err != nil {
+			return fmt.Errorf("解析用户统计数据失败: %v", err)
+		}
+	}
+
+	// 更新统计数据
+	userStatistics.TotalModelCount = totalModelCount + modelCount
+	userStatistics.UserModelCount += modelCount
+	userStatistics.UserUploadCount += modelCount
+
+	// 将统计数据序列化为JSON
+	statisticsBytes, err = json.Marshal(userStatistics)
+	if err != nil {
+		return fmt.Errorf("序列化用户统计数据失败: %v", err)
+	}
+
+	err = ctx.GetStub().PutState(key, statisticsBytes)
+	if err != nil {
+		return fmt.Errorf("保存用户统计数据失败: %v", err)
+	}
+	err = ctx.GetStub().PutState("total_model_count", []byte(strconv.Itoa(userStatistics.TotalModelCount)))
+	if err != nil {
+		return fmt.Errorf("保存总模型数失败: %v", err)
+	}
+
+	return nil
 }

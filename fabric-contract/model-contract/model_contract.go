@@ -38,20 +38,25 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 	doctype := "model"
 	//创建模型信息
 	modelInfo := typestruct.ModelInfo{
-		ModelID:            modelID,
-		ModelName:          modelTxData.ModelName,
-		ModelTrafficType:   modelTxData.ModelTrafficType,
-		ModelType:          modelTxData.ModelType,
-		ModelHash:          modelTxData.ModelHash,
-		ModelOpenSource:    modelTxData.ModelOpenSource,
-		ModelCreatorUserID: userID,
-		ModelFeatures:      modelTxData.ModelFeatures,
-		ModelTags:          modelTxData.ModelTags,
-		ModelDescription:   modelTxData.ModelDescription,
-		ModelDataSize:      modelTxData.ModelDataSize,
-		ModelIPFSHash:      modelTxData.ModelIPFSHash,
-		ModelCreateTime:    time.Now().Format("2024-01-01 00:00:00"),
-		Doctype:            doctype,
+		ModelID:             modelID,
+		ModelHash:           modelTxData.ModelHash,
+		ModelName:           modelTxData.ModelName,
+		CreatorUserID:       userID,
+		ModelDataType:       modelTxData.ModelDataType,
+		ModelType:           modelTxData.ModelType,
+		ModelAlgorithm:      modelTxData.ModelAlgorithm,
+		ModelTrainFramework: modelTxData.ModelTrainFramework,
+		ModelOpenSource:     modelTxData.ModelOpenSource,
+		ModelFeatures:       modelTxData.ModelFeatures,
+		ModelTags:           modelTxData.ModelTags,
+		ModelDescription:    modelTxData.ModelDescription,
+		ModelSize:           modelTxData.ModelSize,
+		ModelDataSize:       modelTxData.ModelDataSize,
+		ModelDataIPFSHash:   modelTxData.ModelDataIPFSHash,
+		ModelIPFSHash:       modelTxData.ModelIPFSHash,
+		Value:               modelTxData.Value,
+		RefCTIId:            modelTxData.RefCTIId,
+		CreateTime:          time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	modelInfoJSONBytes, _ := json.Marshal(modelInfo)
@@ -60,49 +65,53 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 		return nil, fmt.Errorf("failed to put state: %v", err)
 	}
 
-	// 使用 Model ID 作为键将情报数据存储到账本中
+	// 使用 Model ID 作为键将模型数据存储到账本中
 	err = ctx.GetStub().PutState(modelID, modelInfoJSONBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to put CTI info into world state: %v", err)
+		return nil, fmt.Errorf("failed to put model info into world state: %v", err)
 	}
 
 	return &modelInfo, nil
 }
 
 func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterface, modelID string) (*typestruct.ModelInfo, error) {
-	// 根据 CTIID 查询数据
-	ctiAsBytes, err := ctx.GetStub().GetState(modelID)
+	// 根据 ModelID 查询数据
+	modelAsBytes, err := ctx.GetStub().GetState(modelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get state for CTI with ID %s: %v", modelID, err)
+		return nil, fmt.Errorf("failed to get state for model with ID %s: %v", modelID, err)
 	}
-	if ctiAsBytes == nil {
-		return nil, fmt.Errorf("the CTI with ID %s does not exist", modelID)
+	if modelAsBytes == nil {
+		return nil, fmt.Errorf("the model with ID %s does not exist", modelID)
 	}
 
-	// 将获取到的字节数据反序列化为 CtiInfo 结构体
+	// 将获取到的字节数据反序列化为 ModelInfo 结构体
 	var modelInfo typestruct.ModelInfo
-	err = json.Unmarshal(ctiAsBytes, &modelInfo)
+	err = json.Unmarshal(modelAsBytes, &modelInfo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal CTI info: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal model info: %v", err)
 	}
 
-	// 返回查询到的 CTI 信息
+	// 返回查询到的模型信息
 	return &modelInfo, nil
 }
 
-// / QueryAllCTIInfoWithPagination 分页查询所有模型信息
-func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
+// QueryAllModelInfoWithPagination 分页查询所有模型信息
+func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int,pageSize int ) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，查询 Doctype 为 "model" 的所有信息
 	queryString := `{"selector":{"doctype":"model"}}`
 
-	// 执行带分页的查询
-	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
-		return "", fmt.Errorf("执行分页查询失败: %v", err)
+		return nil, fmt.Errorf("执行查询失败: %v", err)
 	}
 	defer resultsIterator.Close()
 
 	var modelInfos []typestruct.ModelInfo
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
 
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
@@ -112,40 +121,43 @@ func (c *ModelContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.Tr
 			continue
 		}
 
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
 		var modelInfo typestruct.ModelInfo
 		err = json.Unmarshal(queryResponse.Value, &modelInfo)
 		if err != nil {
-			// 解析失败，跳过
-			fmt.Printf("failed to unmarshal query result: %v", err)
+			fmt.Printf("解析查询结果失败: %v", err)
 			continue
 		}
 
 		modelInfos = append(modelInfos, modelInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(modelInfos) >= pageSize {
+			break
+		}
 	}
 
 	// 构造返回结构
-	response := struct {
-		ModelInfos []typestruct.ModelInfo `json:"model_infos"`
-		Bookmark   string                 `json:"bookmark"`
-	}{
+	modelQueryResult := typestruct.ModelQueryResult{
 		ModelInfos: modelInfos,
-		Bookmark:   metadata.Bookmark,
+		Total:     count,
+		Page:      page,
+		PageSize:  pageSize,
 	}
 
-	// 序列化为 JSON 字符串
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		return "", fmt.Errorf("序列化响应数据失败: %v", err)
-	}
-
-	return string(responseBytes), nil
+	return &modelQueryResult, nil
 }
 
-// 根据流量类型查询
-// 根据 CTIType 查询所有相关的 CTIInfo
-func (c *ModelContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, modelType int) ([]typestruct.ModelInfo, error) {
-	// 构建查询字符串，根据 CTIType 进行查询
-	queryString := fmt.Sprintf(`{"selector":{"model_traffic_type":%d}}`, modelType)
+// QueryModelsByModelType 根据模型类型查询
+func (c *ModelContract) QueryModelsByModelType(ctx contractapi.TransactionContextInterface, modelType int) ([]typestruct.ModelInfo, error) {
+	// 构建查询字符串，根据 ModelType 进行查询
+	queryString := fmt.Sprintf(`{"selector":{"model_type":%d}}`, modelType)
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
@@ -165,11 +177,11 @@ func (c *ModelContract) QueryModelsByTrafficType(ctx contractapi.TransactionCont
 			continue
 		}
 
-		// 将查询结果反序列化为 CtiInfo 结构体
+		// 将查询结果反序列化为 ModelInfo 结构体
 		var modelInfo typestruct.ModelInfo
 		err = json.Unmarshal(queryResponse.Value, &modelInfo)
 		if err != nil {
-			fmt.Printf("failed to unmarshal CTI info: %v", err)
+			fmt.Printf("failed to unmarshal model info: %v", err)
 			continue
 		}
 
@@ -181,7 +193,7 @@ func (c *ModelContract) QueryModelsByTrafficType(ctx contractapi.TransactionCont
 	return modelInfos, nil
 }
 
-// 根据CTIid查询
+// QueryModelsByRefCTIId 根据CTIid查询
 func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
 	// 构建查询字符串
 	queryString := fmt.Sprintf(`{"selector":{"ref_cti_id":"%s"}}`, refCTIId)
@@ -247,4 +259,64 @@ func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.Transactio
 
 	// 返回结果
 	return models, nil
+}
+
+// QueryModelsByModelTypeWithPagination 根据模型类型分页查询
+func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
+	// 构建查询字符串，根据 ModelType 进行查询
+	queryString := fmt.Sprintf(`{"selector":{"model_type":%d}}`, modelType)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute rich query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	// 定义一个切片存储查询结果
+	var modelInfos []typestruct.ModelInfo
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			fmt.Printf("failed to get next query result: %v", err)
+			continue
+		}
+
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
+		// 将查询结果反序列化为 ModelInfo 结构体
+		var modelInfo typestruct.ModelInfo
+		err = json.Unmarshal(queryResponse.Value, &modelInfo)
+		if err != nil {
+			fmt.Printf("failed to unmarshal model info: %v", err)
+			continue
+		}
+
+		// 将结果追加到切片
+		modelInfos = append(modelInfos, modelInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(modelInfos) >= pageSize {
+			break
+		}
+	}
+
+	// 返回查询结果
+	return &typestruct.ModelQueryResult{
+		ModelInfos: modelInfos,
+		Total:     count,
+		Page:      page,
+		PageSize:  pageSize,
+	}, nil
 }

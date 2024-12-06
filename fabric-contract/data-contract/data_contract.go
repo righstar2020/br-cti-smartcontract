@@ -168,7 +168,7 @@ func (c *DataContract) GetUpchainTrend(ctx contractapi.TransactionContextInterfa
 		}
 		trendBytes, err := json.Marshal(trend)
 		if err != nil {
-			return nil, fmt.Errorf("序列化上链趋势数据失败: %v", err)
+			return nil, fmt.Errorf("序列化上链趋势数据���败: %v", err)
 		}
 		ctx.GetStub().PutState(UPCHAIN_TREND_KEY, trendBytes)
 	}
@@ -194,11 +194,11 @@ func (c *DataContract) GetAttackTypeRanking(ctx contractapi.TransactionContextIn
 	} else {
 		ranking = typestruct.AttackRankInfo{
 			Rankings: []typestruct.RankItem{
-				{Type: "流量攻击", Count: 0},
-				{Type: "恶意软件", Count: 0},
-				{Type: "钓鱼攻击", Count: 0},
-				{Type: "Botnet", Count: 0},
-				{Type: "应用层攻击", Count: 0},
+				{Type: "TRAFFIC", Count: 0},
+				{Type: "HONEYPOT", Count: 0},
+				{Type: "BOTNET", Count: 0},
+				{Type: "APP_LAYER", Count: 0},
+				{Type: "OTHER", Count: 0},
 			},
 		}
 		rankBytes, err := json.Marshal(ranking)
@@ -290,6 +290,9 @@ func (c *DataContract) GetSystemOverview(ctx contractapi.TransactionContextInter
 			CTIValue:          0,
 			CTICount:          0,
 			CTITransactions:   0,
+			ModelValue:        0,
+			ModelCount:        0,
+			ModelTransactions: 0,
 			IOCsCount:         0,
 			AccountCount:      0,
 		}
@@ -361,6 +364,7 @@ func (c *DataContract) updateBasicStats(ctx contractapi.TransactionContextInterf
 			TotalModelDataNum:  0,
 			TotalModelDataSize: 0,
 			CTITypeDataNum:     make(map[string]int),
+			ModelTypeDataNum:   make(map[string]int),
 			IOCsDataNum:        make(map[string]int),
 		}
 	}
@@ -562,6 +566,8 @@ func (c *DataContract) updateSystemOverview(ctx contractapi.TransactionContextIn
 			TotalTransactions: 0,
 			CTIValue:          0,
 			CTICount:          0,
+			ModelCount:        0,
+			ModelValue:        0,
 			IOCsCount:         0,
 			AccountCount:      0,
 		}
@@ -600,4 +606,101 @@ func getCTITypeString(ctiType int) string {
 		return typeName
 	}
 	return "OTHER"
+}
+
+// UpdateModelStatistics 更新模型相关的所有统计数据
+func (c *DataContract) UpdateModelStatistics(ctx contractapi.TransactionContextInterface, modelInfo *typestruct.ModelInfo) error {
+	// 更新基本统计数据
+	if err := c.updateBasicModelStats(ctx, modelInfo); err != nil {
+		return fmt.Errorf("更新基本模型统计失败: %v", err)
+	}
+
+	// 更新上链趋势
+	if err := c.updateUpchainTrend(ctx, "Model"); err != nil {
+		return fmt.Errorf("更新模型上链趋势失败: %v", err)
+	}
+
+	// 更新系统概览
+	if err := c.updateSystemOverviewForModel(ctx, modelInfo); err != nil {
+		return fmt.Errorf("更新系统概览失败: %v", err)
+	}
+
+	return nil
+}
+
+// updateBasicModelStats 更新基本模型统计数据
+func (c *DataContract) updateBasicModelStats(ctx contractapi.TransactionContextInterface, modelInfo *typestruct.ModelInfo) error {
+	statsBytes, err := ctx.GetStub().GetState(STATS_KEY)
+	if err != nil {
+		return err
+	}
+
+	var stats typestruct.DataSatisticsInfo
+	if statsBytes != nil {
+		if err := json.Unmarshal(statsBytes, &stats); err != nil {
+			return err
+		}
+	} else {
+		stats = typestruct.DataSatisticsInfo{
+			TotalCtiDataNum:    0,
+			TotalCtiDataSize:   0,
+			TotalModelDataNum:  0,
+			TotalModelDataSize: 0,
+			CTITypeDataNum:     make(map[string]int),
+			IOCsDataNum:        make(map[string]int),
+			ModelTypeDataNum:   make(map[string]int), // 新增字段
+		}
+	}
+
+	// 更新统计数据
+	stats.TotalModelDataNum++
+	stats.TotalModelDataSize += modelInfo.ModelDataSize
+
+	// 更新模型类型统计
+	modelType := fmt.Sprintf("Type_%d", modelInfo.ModelType)
+	if _, ok := stats.ModelTypeDataNum[modelType]; !ok {
+		stats.ModelTypeDataNum[modelType] = 0
+	}
+	stats.ModelTypeDataNum[modelType]++
+
+	// 保存更新后的统计数据
+	statsBytes, err = json.Marshal(stats)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(STATS_KEY, statsBytes)
+}
+
+// updateSystemOverviewForModel 更新系统概览中的模型相关数据
+func (c *DataContract) updateSystemOverviewForModel(ctx contractapi.TransactionContextInterface, modelInfo *typestruct.ModelInfo) error {
+	overviewBytes, err := ctx.GetStub().GetState(SYSTEM_OVERVIEW_KEY)
+	if err != nil {
+		return err
+	}
+
+	var overview typestruct.SystemOverviewInfo
+	if overviewBytes != nil {
+		if err := json.Unmarshal(overviewBytes, &overview); err != nil {
+			return err
+		}
+	} else {
+		overview = typestruct.SystemOverviewInfo{
+			BlockHeight:       0,
+			TotalTransactions: 0,
+			ModelCount:        0,  // 新增字段
+			ModelValue:        0,  // 新增字段
+		}
+	}
+
+	// 更新系统概览数据
+	overview.ModelCount++
+	overview.TotalTransactions++
+
+	overviewBytes, err = json.Marshal(overview)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(SYSTEM_OVERVIEW_KEY, overviewBytes)
 }

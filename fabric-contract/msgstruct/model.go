@@ -39,6 +39,7 @@ type CtiTxData struct {
 	Description    string   `json:"description"`      // 情报描述
 	DataSize       int      `json:"data_size"`        // 数据大小（B）
 	DataHash       string   `json:"data_hash"`        // 情报数据HASH（sha256）
+	RawDataIPFSHash string   `json:"raw_data_ipfs_hash"` // 情报原始数据IPFS地址
 	IPFSHash       string   `json:"ipfs_hash"`        // IPFS地址
 	Need           int      `json:"need"`             // 情报需求量(销售数量)
 	Value          int      `json:"value"`            // 情报价值（积分）
@@ -49,18 +50,65 @@ type PurchaseCtiTxData struct {
 	CTIID string `json:"cti_id"` // 情报ID
 	UserID string `json:"user_id"` // 用户ID
 }
+type PurchaseModelTxData struct {
+	ModelID string `json:"model_id"` // 模型ID
+	UserID string `json:"user_id"` // 用户ID
+}
 
 //模型交易数据结构
 type ModelTxData struct {
 	ModelID          string   `json:"model_id"`           // 模型ID
 	ModelHash        string   `json:"model_hash"`         // 模型hash
 	ModelName        string   `json:"model_name"`         // 模型名称
-	ModelType        int      `json:"model_type"`         // 模型类型
-	ModelTrafficType int      `json:"model_traffic_type"` // 流量模型类型
+	CreatorUserID    string   `json:"creator_user_id"`    // 模型创建者ID
+	ModelDataType    int      `json:"model_data_type"`    // 模型数据类型(1:流量(数据集)、2:情报(文本))
+	ModelType        int      `json:"model_type"`         // 模型类型(1:分类模型、2:回归模型、3:聚类模型、4:NLP模型)
+	ModelAlgorithm   string   `json:"model_algorithm"`    // 模型算法
+	ModelTrainFramework string `json:"model_train_framework"` // 模型训练框架(Scikit-learn、Pytorch、TensorFlow)
 	ModelOpenSource  int      `json:"model_open_source"`  // 是否开源
 	ModelFeatures    []string `json:"model_features"`     // 模型特征
 	ModelTags        []string `json:"model_tags"`         // 模型标签
 	ModelDescription string   `json:"model_description"`  // 模型描述
-	ModelDataSize    int      `json:"model_data_size"`    // 数据大小
-	ModelIPFSHash    string   `json:"model_ipfs_hash"`    // IPFS地址
+	ModelSize        int      `json:"model_size"`         // 模型大小
+	ModelDataSize    int      `json:"model_data_size"`    // 模型训练数据大小
+	ModelDataIPFSHash string   `json:"model_data_ipfs_hash"` // 模型训练数据IPFS地址
+	Value            int      `json:"value"`                // 模型价值
+	ModelIPFSHash    string   `json:"model_ipfs_hash"`      // 模型IPFS地址
+	RefCTIId         string   `json:"ref_cti_id"`           // 关联情报ID(使用哪个情报训练的模型)
+}
+
+// 模型算法映射表
+var ModelAlgorithms = map[string][]string{
+	//分类模型
+    "classification": {
+        "SVM",                  // 支持向量机
+        "RandomForest",         // 随机森林
+        "DecisionTree",         // 决策树
+        "GaussianNB",          // 高斯朴素贝叶斯
+        "KNN",                  // K近邻分类器
+        "LogisticRegression",   // 逻辑回归
+    },
+	//回归模型
+    "regression": {
+        "LinearRegression",     // 线性回归
+        "Ridge",               // 岭回归
+        "Lasso",               // Lasso回归
+        "SVR",                 // 支持向量回归
+        "RandomForestRegressor", // 随机森林回归
+    },
+	//聚类模型
+    "clustering": {
+        "KMeans",              // K均值聚类
+        "DBSCAN",              // 密度聚类
+        "AgglomerativeClustering", // 层次聚类
+        "GaussianMixture",     // 高斯混合模型
+        "MeanShift",           // 均值漂移
+    },
+	//NLP模型
+    "nlp": {
+        "TfidfVectorizer",     // TF-IDF特征提取
+        "CountVectorizer",     // 词频特征提取
+        "MultinomialNB",       // 多项式朴素贝叶斯
+        "BernoulliNB",         // 伯努利朴素贝叶斯
+    },
 }

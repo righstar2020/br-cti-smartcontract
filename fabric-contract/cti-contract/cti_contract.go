@@ -247,103 +247,124 @@ func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInter
 	return ctiInfos, nil
 }
 
-func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, pageSize int, bookmark string) (string, error) {
+func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
 	// 构建查询字符串，根据情报类型查询
 	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
 
-	// 执行带分页的查询
-	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
-		return "", fmt.Errorf("failed to execute paginated query: %v", err)
+		return nil, fmt.Errorf("执行查询失败: %v", err)
 	}
 	defer resultsIterator.Close()
 
 	var ctiInfos []typestruct.CtiInfo
+	totalCount := 0
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
 
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			fmt.Printf("failed to get next query result: %v", err)
-			continue
-		}
-
-		var ctiInfo typestruct.CtiInfo
-		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
-		if err != nil {
-			fmt.Printf("failed to unmarshal query result: %v", err)
-			continue
-		}
-
-		ctiInfos = append(ctiInfos, ctiInfo)
-	}
-
-	// 构造返回结构
-	response := struct {
-		CtiInfos []typestruct.CtiInfo `json:"cti_infos"`
-		Bookmark string               `json:"bookmark"` // 分页标记
-	}{
-		CtiInfos: ctiInfos,
-		Bookmark: metadata.Bookmark,
-	}
-
-	// 序列化为 JSON 字符串
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal response: %v", err)
-	}
-
-	return string(responseBytes), nil // 返回 JSON 字符串
-}
-
-// QueryAllCTIInfoWithPagination 分页查询所有情报信息
-func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
-	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报
-	queryString := `{"selector":{"doctype":"cti"}}`
-
-	// 执行带分页的查询
-	resultsIterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
-	if err != nil {
-		return "", fmt.Errorf("执行分页查询失败: %v", err)
-	}
-	defer resultsIterator.Close()
-
-	var ctiInfos []typestruct.CtiInfo
-
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
+		totalCount++
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
 			fmt.Printf("获取下一个查询结果失败: %v", err)
 			continue
 		}
 
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
 		var ctiInfo typestruct.CtiInfo
 		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
 		if err != nil {
-			//解析失败，跳过
-			fmt.Printf("failed to unmarshal query result: %v", err)
+			fmt.Printf("解析查询结果失败: %v", err)
 			continue
 		}
 
 		ctiInfos = append(ctiInfos, ctiInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(ctiInfos) >= pageSize {
+			break
+		}
 	}
 
 	// 构造返回结构
-	response := struct {
-		CtiInfos []typestruct.CtiInfo `json:"cti_infos"`
-		Bookmark string               `json:"bookmark"`
-	}{
-		CtiInfos: ctiInfos,
-		Bookmark: metadata.Bookmark,
+	queryResult := &typestruct.CtiQueryResult{
+		CTIInfos: ctiInfos,
+		Total:    totalCount,
+		Page:     page,
+		PageSize: pageSize,
 	}
 
-	// 序列化为 JSON 字符串
-	responseBytes, err := json.Marshal(response)
+	return queryResult, nil
+}
+
+// QueryAllCTIInfoWithPagination 分页查询所有情报信息
+func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
+	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报
+	queryString := `{"selector":{"doctype":"cti"}}`
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
-		return "", fmt.Errorf("序列化响应数据失败: %v", err)
+		return nil, fmt.Errorf("执行查询失败: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var ctiInfos []typestruct.CtiInfo
+	totalCount := 0
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		totalCount++
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			fmt.Printf("获取下一个查询结果失败: %v", err)
+			continue
+		}
+
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			fmt.Printf("解析查询结果失败: %v", err)
+			continue
+		}
+
+		ctiInfos = append(ctiInfos, ctiInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(ctiInfos) >= pageSize {
+			break
+		}
 	}
 
-	return string(responseBytes), nil
+	// 构造返回结构
+	queryResult := &typestruct.CtiQueryResult{
+		CTIInfos: ctiInfos,
+		Total:    totalCount,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	return queryResult, nil
 }
 

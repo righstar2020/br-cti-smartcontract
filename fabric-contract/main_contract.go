@@ -89,6 +89,24 @@ func (c *MainContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextI
 func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	return c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
 }
+//查询用户拥有的情报(上传+购买的)
+func (c *MainContract) QueryUserOwnCTIInfos(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserOwnCTIInfos, error) {
+	uploadCTIInfos, err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	purchaseCTIInfos, err := c.UserPointContract.QueryUserPurchasedCTIs(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	total := len(uploadCTIInfos) + len(purchaseCTIInfos)
+	userOwnCTIInfos := typestruct.UserOwnCTIInfos{	
+		UploadCTIInfos: uploadCTIInfos,
+		PurchaseCTIInfos: purchaseCTIInfos,
+		Total: total,
+	}
+	return &userOwnCTIInfos, nil
+}
 
 // 根据cti类别查询
 func (c *MainContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInterface, ctiType int) ([]typestruct.CtiInfo, error) {
@@ -119,13 +137,13 @@ func (c *MainContract) QueryUserDetailInfo(ctx contractapi.TransactionContextInt
 }
 
 // 模型信息分页查询
-func (c *MainContract) QueryModelInfoByModelIDWithPagination(ctx contractapi.TransactionContextInterface, modelIDPrefix string, pageSize int, bookmark string) (string, error) {
-	return c.ModelContract.QueryModelInfoByModelIDWithPagination(ctx, pageSize, bookmark)
+func (c *MainContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
+	return c.ModelContract.QueryAllModelInfoWithPagination(ctx, page, pageSize)
 }
 
-// 根据流量类型查询模型信息
-func (c *MainContract) QueryModelsByTrafficType(ctx contractapi.TransactionContextInterface, trafficType int) ([]typestruct.ModelInfo, error) {
-	return c.ModelContract.QueryModelsByTrafficType(ctx, trafficType)
+// 根据类型查询模型信息
+func (c *MainContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
+	return c.ModelContract.QueryModelsByTypeWithPagination(ctx, modelType, page, pageSize)
 }
 
 // 查询用户所上传的模型信息
@@ -139,13 +157,13 @@ func (c *MainContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextI
 }
 
 // 分页查询所有情报信息
-func (c *MainContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, pageSize int, bookmark string) (string, error) {
-	return c.CTIContract.QueryAllCTIInfoWithPagination(ctx, pageSize, bookmark)
+func (c *MainContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
+	return c.CTIContract.QueryAllCTIInfoWithPagination(ctx, page, pageSize)
 }
 
 // 根据类型分页查询
-func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, pageSize int, bookmark string) (string, error) {
-	return c.CTIContract.QueryCTIInfoByTypeWithPagination(ctx, ctiType, pageSize, bookmark)
+func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
+	return c.CTIContract.QueryCTIInfoByTypeWithPagination(ctx, ctiType, page, pageSize)
 }
 
 // 查询最新的num条情报精简信息
@@ -173,7 +191,21 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 		return nil, fmt.Errorf("failed to unmarshal model tx data: %v", err)
 	}
 	//验证通过后，注册模型信息
-	return c.ModelContract.RegisterModelInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, modelTxData)
+	modelInfo, err := c.ModelContract.RegisterModelInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, modelTxData)
+	if err != nil {
+		return nil, err
+	}
+	//更新模型相关的所有统计数据
+	err = c.DataContract.UpdateModelStatistics(ctx, modelInfo)
+	if err != nil {
+		return modelInfo, err
+	}
+	//更新用户模型的统计信息
+	err = c.UserPointContract.UpdateUserModelStatistics(ctx, modelInfo.CreatorUserID, 1)
+	if err != nil {
+		return modelInfo, err
+	}
+	return modelInfo, nil
 }
 
 // 注册情报信息
@@ -221,6 +253,22 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 	}
 	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
 }
+//用户购买模型
+func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface, txMsgData string) (string,error) {
+	//验证交易签名(返回交易数据和验证结果)
+	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
+	if err != nil {
+		return "",fmt.Errorf("transaction signature verification failed")
+	}
+	//解析msgData
+	var purchaseModelTxData msgstruct.PurchaseModelTxData
+	err = json.Unmarshal([]byte(TxMsgData.TxData), &purchaseModelTxData)
+	if err != nil {
+		return "",fmt.Errorf("failed to unmarshal msg data: %v", err)
+	}
+	return c.UserPointContract.PurchaseModel(ctx, purchaseModelTxData, TxMsgData.Nonce)
+}
+
 
 // 验证交易随机数和签名
 func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData string) (*msgstruct.TxMsgData, error) {
@@ -246,7 +294,7 @@ func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInter
 	return &txMsgData, nil
 
 	//暂时取消交易签名验证
-	// 在处理实际交易时验证
+	// ���处理实际交易时验证
 	// err = c.VerifyTransactionReplay(ctx, txMsgData.Nonce, txMsgData.UserID, txMsgData.NonceSignature)
 	// if err != nil {
 	// 	// 交易被重放或 nonce 无效
