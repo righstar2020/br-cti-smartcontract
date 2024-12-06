@@ -49,11 +49,11 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
 		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}
-	user_id, err := c.UserContract.RegisterUser(ctx, userRigisterData)
+	user_id, err := c.RegisterUser(ctx, userRigisterData)
 	if err != nil {
 		return "", err
 	}
-	err = c.UserPointContract.RegisterUserPointInfo(ctx, user_id, newUserPointInfo)
+	err = c.RegisterUserPointInfo(ctx, user_id, newUserPointInfo)
 	if err != nil {
 		return user_id, err
 	}

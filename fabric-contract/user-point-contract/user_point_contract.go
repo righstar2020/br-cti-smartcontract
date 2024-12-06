@@ -105,7 +105,7 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	}
 
 	// 获取情报信息
-	ctiInfo, err := c.CTIContract.QueryCTIInfo(ctx, purchaseCTITxData.CTIID)
+	ctiInfo, err := c.QueryCTIInfo(ctx, purchaseCTITxData.CTIID)
 	if err != nil {
 		return err
 	}

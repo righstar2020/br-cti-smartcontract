@@ -75,7 +75,9 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}
 	
-	c.UserPointContract.RegisterUserPointInfo(ctx, userID, newUserPointInfo)
+	if err := c.UserPointContract.RegisterUserPointInfo(ctx, userID, newUserPointInfo); err != nil {
+		return "", fmt.Errorf("failed to register user point info: %v", err)
+	}
 
 	// 将新用户ID添加到用户列表中
 	err = c.addUserToAccountList(ctx, userID)
