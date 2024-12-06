@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
+	"encoding/base64"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
@@ -95,7 +95,7 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 }
 
 // PurchaseCTI 修改后的购买CTI函数
-func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, purchaseCTITxData msgstruct.PurchaseCtiTxData) error {
+func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, purchaseCTITxData msgstruct.PurchaseCtiTxData, nonce string) error {
 	
 
 	// 获取用户积分信息
@@ -125,7 +125,7 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	}
 
 	// 创建交易记录
-	err = c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID)
+	err = c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce)
 	if err != nil {
 		return fmt.Errorf("创建交易记录失败: %v", err)
 	}
@@ -312,10 +312,22 @@ func (c *UserPointContract) AddPointTransaction(ctx contractapi.TransactionConte
 
 // CreateBilateralTransactions 创建双方交易记录
 func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, infoID string) error {
+	fromID string, toID string, points int, infoID string,nonce string) error {
 
 	timestamp := time.Now().Format("2006-01-02 15:04")
-	transaction_id := uuid.New().String()
+	// 从base64编码的nonce中提取随机数
+	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
+	nonceNum := 100000
+
+	if err == nil && len(nonceBytes) >= 3 {
+		// 使用前3个字节生成6位随机数
+		nonceNum = int(nonceBytes[0])*10000 + int(nonceBytes[1])*100 + int(nonceBytes[2])
+		nonceNum = nonceNum % 1000000 // 确保是6位数
+	}
+	timesID := time.Now().Format("0601021504")
+	randomNum := fmt.Sprintf("%06d", nonceNum)
+	// 生成交易ID: 时间戳(12位,年月日时分) + 随机数(6位)
+	transaction_id := fmt.Sprintf("%s%s", timesID, randomNum)
 	// 支出方交易记录
 	outTransaction := &PointTransaction{
 		TransactionID:   transaction_id,
@@ -326,11 +338,10 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		Timestamp:       timestamp,
 		Status:          "success",
 	}
-	err := c.AddPointTransaction(ctx, fromID, outTransaction)
-	if err != nil {
+	if err := c.AddPointTransaction(ctx, fromID, outTransaction); err != nil {
 		return fmt.Errorf("添加支出方交易记录失败: %v", err)
 	}
-
+	
 	// 收入方交易记录
 	inTransaction := &PointTransaction{
 		TransactionID:   transaction_id,
@@ -341,8 +352,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		Timestamp:       timestamp,
 		Status:          "success",
 	}
-	err = c.AddPointTransaction(ctx, toID, inTransaction)
-	if err != nil {
+	if err := c.AddPointTransaction(ctx, toID, inTransaction); err != nil {
 		return fmt.Errorf("添加收入方交易记录失败: %v", err)
 	}
 

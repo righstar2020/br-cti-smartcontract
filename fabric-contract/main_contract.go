@@ -49,11 +49,11 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
 		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}
-	user_id, err := c.RegisterUser(ctx, userRigisterData)
+	user_id, err := c.UserContract.RegisterUser(ctx, userRigisterData)
 	if err != nil {
 		return "", err
 	}
-	err = c.RegisterUserPointInfo(ctx, user_id, newUserPointInfo)
+	err = c.UserPointContract.RegisterUserPointInfo(ctx, user_id, newUserPointInfo)
 	if err != nil {
 		return user_id, err
 	}
@@ -219,7 +219,7 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
-	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData)
+	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
 }
 
 // 验证交易随机数和签名
