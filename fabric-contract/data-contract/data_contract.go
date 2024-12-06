@@ -10,7 +10,6 @@ import (
 )
 
 type DataContract struct {
-	contractapi.Contract
 }
 
 //在这里写统计数据的函数(每次情报上链都会调用这些函数做统计)

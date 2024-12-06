@@ -53,7 +53,6 @@ var SatisticInfo = map[string]interface{}{
 
 // CTIContract 是情报合约的结构体
 type CTIContract struct {
-	contractapi.Contract
 }
 
 // 注册 CTI 信息

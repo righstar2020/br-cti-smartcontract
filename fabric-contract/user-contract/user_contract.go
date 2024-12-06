@@ -17,7 +17,6 @@ import (
 
 // UserContract 是用户信息合约的结构体
 type UserContract struct {
-	contractapi.Contract
 	userPointContract.UserPointContract
 }
 

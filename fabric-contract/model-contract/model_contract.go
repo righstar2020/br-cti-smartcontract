@@ -13,7 +13,6 @@ import (
 
 // ModelContract 是模型合约的结构体
 type ModelContract struct {
-	contractapi.Contract
 }
 
 // RegisterModelInfo 注册模型信息

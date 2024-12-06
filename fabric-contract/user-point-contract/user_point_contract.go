@@ -15,7 +15,6 @@ import (
 
 // UserPointContract 是积分合约的结构体
 type UserPointContract struct {
-	contractapi.Contract
 	ctiContract.CTIContract
 }
 
