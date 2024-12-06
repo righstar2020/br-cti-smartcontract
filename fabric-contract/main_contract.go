@@ -207,17 +207,17 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 }
 
 // 用户购买情报
-func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) error {
+func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string,error) {
 	//验证交易签名(返回交易数据和验证结果)
 	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return fmt.Errorf("transaction signature verification failed")
+		return "",fmt.Errorf("transaction signature verification failed")
 	}
 	//解析msgData
 	var purchaseCTITxData msgstruct.PurchaseCtiTxData
 	err = json.Unmarshal([]byte(TxMsgData.TxData), &purchaseCTITxData)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal msg data: %v", err)
+		return "",fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
 }

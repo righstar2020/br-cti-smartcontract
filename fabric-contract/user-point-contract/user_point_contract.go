@@ -95,24 +95,24 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 }
 
 // PurchaseCTI 修改后的购买CTI函数
-func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, purchaseCTITxData msgstruct.PurchaseCtiTxData, nonce string) error {
+func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, purchaseCTITxData msgstruct.PurchaseCtiTxData, nonce string) (string,error) {
 	
 
 	// 获取用户积分信息
 	userPointInfo, err := c.QueryUserPointInfo(ctx, purchaseCTITxData.UserID)
 	if err != nil {
-		return err
+		return "",err
 	}
 
 	// 获取情报信息
 	ctiInfo, err := c.QueryCTIInfo(ctx, purchaseCTITxData.CTIID)
 	if err != nil {
-		return err
+		return "",err
 	}
 
 	// 检查用户是否有足够的积分
 	if userPointInfo.UserValue < ctiInfo.Value {
-		return fmt.Errorf("insufficient points for purchase")
+		return "",fmt.Errorf("insufficient points for purchase")
 	}
 	userID := purchaseCTITxData.UserID
 	ctiID := purchaseCTITxData.CTIID
@@ -121,22 +121,22 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	// 处理积分转移
 	err = c.TransferPoints(ctx, userID, sellerID, ctiInfo.Value, ctiID)
 	if err != nil {
-		return fmt.Errorf("积分转移失败: %v", err)
+		return "",fmt.Errorf("积分转移失败: %v", err)
 	}
 
 	// 创建交易记录
-	err = c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce)
+	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce)
 	if err != nil {
-		return fmt.Errorf("创建交易记录失败: %v", err)
+		return "",fmt.Errorf("创建交易记录失败: %v", err)
 	}
 
 	// 更新CTI交易总数
 	err = c.UpdateCTITransactionCount(ctx)
 	if err != nil {
-		return fmt.Errorf("更新交易计数失败: %v", err)
+		return transaction_id,fmt.Errorf("更新交易计数失败: %v", err)
 	}
 
-	return nil
+	return transaction_id,nil
 }
 
 // UserStatistics 用户统计数据结构
@@ -312,7 +312,7 @@ func (c *UserPointContract) AddPointTransaction(ctx contractapi.TransactionConte
 
 // CreateBilateralTransactions 创建双方交易记录
 func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, infoID string,nonce string) error {
+	fromID string, toID string, points int, infoID string,nonce string) (string,error) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04")
 	// 从base64编码的nonce中提取随机数
@@ -339,7 +339,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		Status:          "success",
 	}
 	if err := c.AddPointTransaction(ctx, fromID, outTransaction); err != nil {
-		return fmt.Errorf("添加支出方交易记录失败: %v", err)
+		return "",fmt.Errorf("添加支出方交易记录失败: %v", err)
 	}
 	
 	// 收入方交易记录
@@ -353,10 +353,10 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		Status:          "success",
 	}
 	if err := c.AddPointTransaction(ctx, toID, inTransaction); err != nil {
-		return fmt.Errorf("添加收入方交易记录失败: %v", err)
+		return "",fmt.Errorf("添加收入方交易记录失败: %v", err)
 	}
 
-	return nil
+	return transaction_id,nil
 }
 
 // UpdateCTITransactionCount 更新CTI交易总数
