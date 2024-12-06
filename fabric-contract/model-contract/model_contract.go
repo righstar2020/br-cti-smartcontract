@@ -17,13 +17,8 @@ type ModelContract struct {
 }
 
 // RegisterModelInfo 注册模型信息
-func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, userID string, txData []byte, nonce string) (*typestruct.ModelInfo, error) {
-	//解析交易数据
-	var modelTxData msgstruct.ModelTxData
-	err := json.Unmarshal(txData, &modelTxData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal model info: %v", err)
-	}
+func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, userID string, nonce string,modelTxData msgstruct.ModelTxData) (*typestruct.ModelInfo, error) {
+
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
 	nonceNum := 100000

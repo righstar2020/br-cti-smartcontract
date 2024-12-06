@@ -57,13 +57,8 @@ type CTIContract struct {
 }
 
 // 注册 CTI 信息
-func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, userID string, txData []byte, nonce string) (*typestruct.CtiInfo, error) {
-	//解析交易数据
-	var ctiTxData msgstruct.CtiTxData
-	err := json.Unmarshal(txData, &ctiTxData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
-	}
+func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, userID string, nonce string,ctiTxData msgstruct.CtiTxData) (*typestruct.CtiInfo, error) {
+	
 
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)

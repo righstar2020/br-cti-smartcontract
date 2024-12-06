@@ -19,6 +19,15 @@ type UserPointContract struct {
 	ctiContract.CTIContract
 }
 
+//注册用户积分
+func (c *UserPointContract) RegisterUserPointInfo(ctx contractapi.TransactionContextInterface, userID string, userPointInfo typestruct.UserPointInfo) error {
+	userPointInfoBytes, err := json.Marshal(userPointInfo)
+	if err != nil {
+		return fmt.Errorf("序列化用户积分信息失败: %v", err)
+	}
+	return ctx.GetStub().PutState(userID+"_point_info", userPointInfoBytes)
+}
+
 // QueryUserPointInfo 根据ID查询用户积分信息
 func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserPointInfo, error) {
 	// 从UserPointInfoMap中获取用户积分信息
@@ -87,13 +96,8 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 }
 
 // PurchaseCTI 修改后的购买CTI函数
-func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txData []byte) error {
-	//解析msgData
-	var purchaseCTITxData msgstruct.PurchaseCtiTxData
-	err := json.Unmarshal(txData, &purchaseCTITxData)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal msg data: %v", err)
-	}
+func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, purchaseCTITxData msgstruct.PurchaseCtiTxData) error {
+	
 
 	// 获取用户积分信息
 	userPointInfo, err := c.QueryUserPointInfo(ctx, purchaseCTITxData.UserID)

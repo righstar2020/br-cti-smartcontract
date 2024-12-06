@@ -38,53 +38,36 @@ type NonceRecord struct {
 // 初始化主合约
 func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (string, error) {
 	// 创建用户信息
-	userInfo := typestruct.UserInfo{
-		UserID:        "123456789",                              // 用户公钥的SHA256哈希值（示例）
-		UserName:      "exampleUser",                            // 用户名
-		PublicKey:     "publicKeyExample",                       // 公钥
-		PublicKeyType: "RSA",                                    // 公钥类型（例如：RSA）
-		Value:         100000,                                   // 用户积分
-		CreateTime:    time.Now().Format("2006-01-02 15:04:05"), // 当前创建时间
+	userRigisterData := msgstruct.UserRegisterMsgData{
+		UserName:      "Admin",                            // 用户名
+		PublicKey:     "hello world",                      // 公钥
 	}
-
-	// 创建用户积分信息
+	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
-		UserValue:  100000,               // 初始化用户的积分值为 100000
-		UserCTIMap: make(map[string]int), // 空的CTI映射
-		CTIBuyMap:  make(map[string]int), // 空的CTI购买映射
-		CTISaleMap: make(map[string]int), // 空的CTI销售映射
+		UserValue:   10000000000, // 管理员用户的积分值为 10000000000
+		UserCTIMap: make(map[string]int),    // 空的CTI映射
+		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
+		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}
-
-	// 将用户信息序列化为JSON字节数组
-	userInfoBytes, err := json.Marshal(userInfo)
+	user_id, err := c.UserContract.RegisterUser(ctx, userRigisterData)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal user info: %v", err)
+		return "", err
 	}
-
-	// 将用户信息存储到账本中，以 UserID 作为键
-	err = ctx.GetStub().PutState(userInfo.UserID, userInfoBytes)
+	err = c.UserPointContract.RegisterUserPointInfo(ctx, user_id, newUserPointInfo)
 	if err != nil {
-		return "", fmt.Errorf("failed to put user info into the ledger: %v", err)
+		return user_id, err
 	}
-
-	// 将用户积分信息序列化为JSON字节数组
-	userPointInfoBytes, err := json.Marshal(newUserPointInfo)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal user point info: %v", err)
-	}
-
-	// 将用户积分信息存储到账本中，以 UserID 作为键
-	err = ctx.GetStub().PutState(userInfo.UserID+"_point_info", userPointInfoBytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to put user point info into the ledger: %v", err)
-	}
-
-	return "success", nil
+	return user_id, nil
 }
 
 // 注册用户信息
 func (c *MainContract) RegisterUserInfo(ctx contractapi.TransactionContextInterface, msgData string) (string, error) {
-	return c.UserContract.RegisterUser(ctx, []byte(msgData))
+	var userRigisterData msgstruct.UserRegisterMsgData
+	err := json.Unmarshal([]byte(msgData), &userRigisterData)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
+	}
+	return c.UserContract.RegisterUser(ctx, userRigisterData)
 }
 
 // 查询模型信息
@@ -120,6 +103,19 @@ func (c *MainContract) QueryUserInfo(ctx contractapi.TransactionContextInterface
 // 查询用户积分信息
 func (c *MainContract) QueryUserPointInfo(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserPointInfo, error) {
 	return c.UserPointContract.QueryUserPointInfo(ctx, userID)
+}
+
+// 查询用户详细信息
+func (c *MainContract) QueryUserDetailInfo(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserDetailInfo, error) {
+	userInfo, err := c.UserContract.QueryUserInfo(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	userPointInfo, err := c.UserPointContract.QueryUserPointInfo(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &typestruct.UserDetailInfo{UserInfo: *userInfo, UserPointInfo: *userPointInfo}, nil
 }
 
 // 模型信息分页查询
@@ -171,8 +167,13 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 	if err != nil {
 		return nil, err
 	}
+	var modelTxData msgstruct.ModelTxData
+	err = json.Unmarshal([]byte(TxMsgData.TxData), &modelTxData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal model tx data: %v", err)
+	}
 	//验证通过后，注册模型信息
-	return c.ModelContract.RegisterModelInfo(ctx, TxMsgData.UserID, TxMsgData.TxData, TxMsgData.Nonce)
+	return c.ModelContract.RegisterModelInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, modelTxData)
 }
 
 // 注册情报信息
@@ -182,9 +183,13 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 	if err != nil {
 		return nil, err
 	}
-
+	var ctiTxData msgstruct.CtiTxData
+	err = json.Unmarshal([]byte(TxMsgData.TxData), &ctiTxData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cti tx data: %v", err)
+	}
 	//验证通过后，注册情报信息
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID, TxMsgData.TxData, TxMsgData.Nonce)
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID,TxMsgData.Nonce,ctiTxData)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +213,13 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 	if err != nil {
 		return fmt.Errorf("transaction signature verification failed")
 	}
-	return c.UserPointContract.PurchaseCTI(ctx, TxMsgData.TxData)
+	//解析msgData
+	var purchaseCTITxData msgstruct.PurchaseCtiTxData
+	err = json.Unmarshal([]byte(TxMsgData.TxData), &purchaseCTITxData)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal msg data: %v", err)
+	}
+	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData)
 }
 
 // 验证交易随机数和签名

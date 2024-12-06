@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 )
@@ -17,26 +18,20 @@ import (
 // UserContract 是用户信息合约的结构体
 type UserContract struct {
 	contractapi.Contract
+	userPointContract.UserPointContract
 }
 
 // 注册用户(msgData:入参数据需要解析)
-func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface, msgData []byte) (string, error) {
-
-	//解析消息结构体
-	var userMsgData msgstruct.UserRegisterMsgData
-	err := json.Unmarshal(msgData, &userMsgData)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
-	}
+func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface, userRigisterData msgstruct.UserRegisterMsgData) (string, error) {
 	
 	// 验证必需字段
-	if userMsgData.PublicKey == "" {
+	if userRigisterData.PublicKey == "" {
 		return "", fmt.Errorf("public key is required")
 	}
 	
 	// 使用公钥的 SHA256 哈希值作为 UserID
 	hash := sha256.New()
-	hash.Write([]byte(userMsgData.PublicKey))
+	hash.Write([]byte(userRigisterData.PublicKey))
 	userID := hex.EncodeToString(hash.Sum(nil))
 
 	// 检查生成的 UserID 是否已存在
@@ -58,10 +53,9 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	// 创建新的用户对象，初始 value 设置为 0
 	newUser := typestruct.UserInfo{
 		UserID:         userID,
-		UserName:       userMsgData.UserName,
-		PublicKey:      userMsgData.PublicKey,
+		UserName:       userRigisterData.UserName,
+		PublicKey:      userRigisterData.PublicKey,
 		PublicKeyType:  "ECC",
-		Value:          0,
 		CreateTime:     createTime,
 	}
 	// 将新用户对象序列化为 JSON 字节数组
@@ -76,23 +70,13 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	}
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
-		UserValue:   0, // 初始化用户的积分值为 0
+		UserValue:   1000, // 初始化用户的积分值为 1000
 		UserCTIMap: make(map[string]int),    // 空的CTI映射
 		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
 		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
 	}
 	
-	// 将用户的积分信息序列化为 JSON 字节数组
-	newPointInfoAsBytes, err := json.Marshal(newUserPointInfo)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal point info: %v", err)
-	}
-
-	// 将用户的积分映射存储到账本中
-	err = ctx.GetStub().PutState(userID+"_point_info", newPointInfoAsBytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to put user points into world state: %v", err)
-	}
+	c.UserPointContract.RegisterUserPointInfo(ctx, userID, newUserPointInfo)
 
 	// 将新用户ID添加到用户列表中
 	err = c.addUserToAccountList(ctx, userID)
@@ -183,5 +167,4 @@ func (c *UserContract) QueryUserInfo(ctx contractapi.TransactionContextInterface
 
 	return &userInfo, nil
 }
-
 

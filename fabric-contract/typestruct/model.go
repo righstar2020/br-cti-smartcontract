@@ -6,7 +6,6 @@ type UserInfo struct {
 	UserName      string `json:"user_name"`       //用户名
 	PublicKey     string `json:"public_key"`      //用户公钥
 	PublicKeyType string `json:"public_key_type"` //用户公钥类型
-	Value         int    `json:"value"`           //用户积分
 	CreateTime    string `json:"create_time"`     //用户创建时间
 }
 
@@ -16,6 +15,12 @@ type UserPointInfo struct {
 	CTIBuyMap  map[string]int `json:"cti_buy_map"`  //用户购买的情报map
 	CTISaleMap map[string]int `json:"cti_sale_map"` //用户销售的情报map
 }
+//用户详细信息
+type UserDetailInfo struct {
+	UserInfo
+	UserPointInfo
+}
+
 
 // 情报数据结构定义
 type CtiInfo struct {
