@@ -98,6 +98,7 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
 		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）
 		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
+		Doctype:        "cti",                                                                      // 文档类型
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组

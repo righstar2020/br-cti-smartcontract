@@ -57,6 +57,7 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 		Value:               modelTxData.Value,
 		RefCTIId:            modelTxData.RefCTIId,
 		CreateTime:          time.Now().Format("2006-01-02 15:04:05"),
+		Doctype:             "model",
 	}
 
 	modelInfoJSONBytes, _ := json.Marshal(modelInfo)

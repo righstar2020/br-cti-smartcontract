@@ -101,6 +101,7 @@ type ModelInfo struct {
 	Value        	   int      `json:"value"`           	   // 模型价值
 	RefCTIId           string   `json:"ref_cti_id"`            // 关联情报ID(使用哪个情报训练的模型)
 	CreateTime         string   `json:"create_time"`           // 模型创建时间（由合约生成）
+	Doctype            string   `json:"doctype"`               // 文档类型
 }
 
 type ModelQueryResult struct {
