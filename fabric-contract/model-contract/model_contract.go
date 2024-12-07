@@ -107,7 +107,7 @@ func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.Transact
 	}
 	defer resultsIterator.Close()
 
-	var modelInfos []typestruct.ModelInfo
+	modelInfos := []typestruct.ModelInfo{}
 
 	// 计算偏移量
 	offset := pageSize * (page - 1)
