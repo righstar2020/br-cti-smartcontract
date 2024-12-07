@@ -88,10 +88,12 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		Tags:           ctiTxData.Tags,                                                             // 情报标签
 		IOCs:           ctiTxData.IOCs,                                                             // 情报IOCs
 		StixData:       ctiTxData.StixData,                                                         // STIX数据
+		StixIPFSHash:   ctiTxData.StixIPFSHash,                                                     // STIX数据,IPFS地址
 		StatisticInfo:  ctiTxData.StatisticInfo,                                                    // 统计信息
 		Description:    ctiTxData.Description,                                                      // 情报描述
 		DataSize:       ctiTxData.DataSize,                                                         // 数据大小（B）
-		IPFSHash:       ctiTxData.IPFSHash,                                                         // IPFS 地址
+		DataSourceHash: ctiTxData.DataSourceHash,                                                   // 数据源HASH
+		DataSourceIPFSHash: ctiTxData.DataSourceIPFSHash,                                           // 数据源IPFS地址
 		Need:           0,                                                                          // 情报需求量
 		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
 		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）

@@ -34,13 +34,13 @@ type CtiTxData struct {
 	CreatorUserID  string   `json:"creator_user_id"`  // 创建者ID(公钥sha256)
 	Tags           []string `json:"tags"`             // 情报标签数组
 	IOCs           []string `json:"iocs"`             // 包含的沦陷指标（IP, Port, Payload,URL, Hash）
-	StixData       string   `json:"stix_data"`        // STIX数据（JSON []byte）可以有多条
 	StatisticInfo  string  `json:"statistic_info"`   // 统计信息(JSON []byte)
+	StixData       string   `json:"stix_data"`        // STIX数据（JSON []byte）可以有多条
+	StixIPFSHash   string   `json:"stix_ipfs_hash"`   // STIX数据,IPFS地址
 	Description    string   `json:"description"`      // 情报描述
 	DataSize       int      `json:"data_size"`        // 数据大小（B）
-	DataHash       string   `json:"data_hash"`        // 情报数据HASH（sha256）
-	RawDataIPFSHash string   `json:"raw_data_ipfs_hash"` // 情报原始数据IPFS地址
-	IPFSHash       string   `json:"ipfs_hash"`        // IPFS地址
+	DataSourceHash string   `json:"data_source_hash"` // 数据源HASH（sha256）
+	DataSourceIPFSHash string   `json:"data_source_ipfs_hash"` // 数据源IPFS地址
 	Need           int      `json:"need"`             // 情报需求量(销售数量)
 	Value          int      `json:"value"`            // 情报价值（积分）
 	CompreValue    int      `json:"compre_value"`     // 综合价值（积分激励算法定价）
