@@ -76,7 +76,6 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分) + 随机数(6位)
 	ctiID := fmt.Sprintf("%02d%s%s", ctiType, timestamp, randomNum)
-	doctype := "cti"
 	// 创建新的 CtiInfo 对象
 	newCTI := typestruct.CtiInfo{
 		CTIID:          ctiID,                                                                      // 生成唯一的 CTI ID
@@ -97,7 +96,6 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
 		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）
 		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
-		Doctype:        doctype,
 	}
 
 	// 将新 CTI 信息序列化为 JSON 字节数组

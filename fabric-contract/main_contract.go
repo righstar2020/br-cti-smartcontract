@@ -92,13 +92,15 @@ func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionCo
 //查询用户拥有的情报(上传+购买的)
 func (c *MainContract) QueryUserOwnCTIInfos(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserOwnCTIInfos, error) {
 	uploadCTIInfos, err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
-	if err != nil {
-		return nil, err
+	if err != nil || uploadCTIInfos == nil {
+		uploadCTIInfos = []typestruct.CtiInfo{} // 初始化为空数组而不是nil
 	}
+	
 	purchaseCTIInfos, err := c.UserPointContract.QueryUserPurchasedCTIs(ctx, userID)
-	if err != nil {
-		return nil, err
+	if err != nil || purchaseCTIInfos == nil {
+		purchaseCTIInfos = []typestruct.CtiInfo{} // 初始化为空数组而不是nil
 	}
+
 	total := len(uploadCTIInfos) + len(purchaseCTIInfos)
 	userOwnCTIInfos := typestruct.UserOwnCTIInfos{	
 		UploadCTIInfos: uploadCTIInfos,

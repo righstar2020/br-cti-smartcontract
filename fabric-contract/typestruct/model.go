@@ -43,7 +43,7 @@ type CtiInfo struct {
 	Value          int      `json:"value"`            // 情报价值（积分）
 	CompreValue    int      `json:"compre_value"`     // 综合价值（积分激励算法定价）
 	CreateTime     string   `json:"create_time"`      // 情报创建时间（由合约生成）
-	Doctype        string      `json:"doctype"`          // 文档类型
+	Doctype        string    `json:"doctype"`          // 文档类型
 }
 
 // 情报查询结果
