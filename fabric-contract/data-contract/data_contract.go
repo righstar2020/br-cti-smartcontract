@@ -688,8 +688,8 @@ func (c *DataContract) updateSystemOverviewForModel(ctx contractapi.TransactionC
 		overview = typestruct.SystemOverviewInfo{
 			BlockHeight:       0,
 			TotalTransactions: 0,
-			ModelCount:        0,  // 新增字段
-			ModelValue:        0,  // 新增字段
+			ModelCount:        0, // 新增字段
+			ModelValue:        0, // 新增字段
 		}
 	}
 

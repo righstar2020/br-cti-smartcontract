@@ -16,7 +16,7 @@ type ModelContract struct {
 }
 
 // RegisterModelInfo 注册模型信息
-func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, userID string, nonce string,modelTxData msgstruct.ModelTxData) (*typestruct.ModelInfo, error) {
+func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, userID string, nonce string, modelTxData msgstruct.ModelTxData) (*typestruct.ModelInfo, error) {
 
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
@@ -97,7 +97,7 @@ func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterfa
 }
 
 // QueryAllModelInfoWithPagination 分页查询所有模型信息
-func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int,pageSize int ) (*typestruct.ModelQueryResult, error) {
+func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，查询 Doctype 为 "model" 的所有信息
 	queryString := `{"selector":{"doctype":"model"}}`
 
@@ -147,9 +147,9 @@ func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.Transact
 	// 构造返回结构
 	modelQueryResult := typestruct.ModelQueryResult{
 		ModelInfos: modelInfos,
-		Total:     count,
-		Page:      page,
-		PageSize:  pageSize,
+		Total:      count,
+		Page:       page,
+		PageSize:   pageSize,
 	}
 
 	return &modelQueryResult, nil
@@ -316,8 +316,8 @@ func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.Transact
 	// 返回查询结果
 	return &typestruct.ModelQueryResult{
 		ModelInfos: modelInfos,
-		Total:     count,
-		Page:      page,
-		PageSize:  pageSize,
+		Total:      count,
+		Page:       page,
+		PageSize:   pageSize,
 	}, nil
 }
