@@ -621,7 +621,7 @@ func (c *DataContract) UpdateModelStatistics(ctx contractapi.TransactionContextI
 	}
 
 	// 更新系统概览
-	if err := c.updateSystemOverviewForModel(ctx, modelInfo); err != nil {
+	if err := c.updateSystemOverviewForModel(ctx); err != nil {
 		return fmt.Errorf("更新系统概览失败: %v", err)
 	}
 
@@ -673,7 +673,7 @@ func (c *DataContract) updateBasicModelStats(ctx contractapi.TransactionContextI
 }
 
 // updateSystemOverviewForModel 更新系统概览中的模型相关数据
-func (c *DataContract) updateSystemOverviewForModel(ctx contractapi.TransactionContextInterface, modelInfo *typestruct.ModelInfo) error {
+func (c *DataContract) updateSystemOverviewForModel(ctx contractapi.TransactionContextInterface) error {
 	overviewBytes, err := ctx.GetStub().GetState(SYSTEM_OVERVIEW_KEY)
 	if err != nil {
 		return err
