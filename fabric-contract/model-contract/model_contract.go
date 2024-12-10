@@ -36,6 +36,13 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 	// 生成Model ID: 类型(2位) + 时间戳(12位,年月日时分) + 随机数(6位)
 	modelID := fmt.Sprintf("%02d%s%s", modelType, timestamp, randomNum)
 	doctype := "model"
+	existingModel, err := ctx.GetStub().GetState(modelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if existingModel != nil {
+		return nil, fmt.Errorf("model with ID %s already exists", modelID)
+	}
 	//创建模型信息
 	modelInfo := typestruct.ModelInfo{
 		ModelID:             modelID,
@@ -57,21 +64,19 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 		Value:               modelTxData.Value,
 		RefCTIId:            modelTxData.RefCTIId,
 		CreateTime:          time.Now().Format("2006-01-02 15:04:05"),
-		Doctype:             "model",
+		Doctype:             doctype,
 	}
 
-	modelInfoJSONBytes, _ := json.Marshal(modelInfo)
-	err = ctx.GetStub().PutState(doctype, modelInfoJSONBytes)
+	modelInfoJSONBytes, err := json.Marshal(modelInfo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to put state: %v", err)
+		return nil, fmt.Errorf("failed to marshal model info: %v", err)
 	}
 
-	// 使用 Model ID 作为键将模型数据存储到账本中
+	// **步骤 2：使用 modelID 作为键将模型信息存储到账本中**
 	err = ctx.GetStub().PutState(modelID, modelInfoJSONBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to put model info into world state: %v", err)
 	}
-
 	return &modelInfo, nil
 }
 
@@ -231,7 +236,7 @@ func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContext
 // QueryModelInfoByCreatorUserID 根据创建者ID查询
 func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
 	// 构建查询字符串
-	queryString := fmt.Sprintf(`{"selector":{"model_creator_user_id":"%s"}}`, userId)
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userId)
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
@@ -265,7 +270,7 @@ func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.Transactio
 // QueryModelsByModelTypeWithPagination 根据模型类型分页查询
 func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，根据 ModelType 进行查询
-	queryString := fmt.Sprintf(`{"selector":{"model_type":%d}}`, modelType)
+	queryString := fmt.Sprintf(`{"selector":{"doctype":"model", "model_type":%d}}`, modelType)
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
