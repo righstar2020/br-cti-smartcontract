@@ -125,9 +125,9 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	if err != nil {
 		return "",fmt.Errorf("积分转移失败: %v", err)
 	}
-
+	doctype := "cti"
 	// 创建交易记录
-	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce)
+	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce,doctype)
 	if err != nil {
 		return "",fmt.Errorf("创建交易记录失败: %v", err)
 	}
@@ -168,9 +168,10 @@ func (c *UserPointContract) PurchaseModel(ctx contractapi.TransactionContextInte
 	if err != nil {
 		return "",fmt.Errorf("积分转移失败: %v", err)
 	}
+	doctype := "model"
 
 	// 创建交易记录
-	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, modelInfo.Value, modelID, nonce)
+	transaction_id,err := c.CreateBilateralTransactions(ctx, userID, sellerID, modelInfo.Value, modelID, nonce, doctype)
 	if err != nil {
 		return "",fmt.Errorf("创建交易记录失败: %v", err)
 	}
@@ -310,6 +311,7 @@ type PointTransaction struct {
 	InfoID          string `json:"info_id"`          // 相关情报ID
 	Timestamp       string `json:"timestamp"`        // 交易时间
 	Status          string `json:"status"`           // 交易状态(success/fail)
+	Doctype         string `json:"doctype"`          // 交易类型
 }
 
 // QueryPointTransactions 查询用户的积分交易记录
@@ -358,7 +360,7 @@ func (c *UserPointContract) AddPointTransaction(ctx contractapi.TransactionConte
 
 // CreateBilateralTransactions 创建双方交易记录
 func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, infoID string,nonce string) (string,error) {
+	fromID string, toID string, points int, infoID string,nonce string,doctype string) (string,error) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04")
 	// 从base64编码的nonce中提取随机数
@@ -383,6 +385,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		InfoID:          infoID,
 		Timestamp:       timestamp,
 		Status:          "success",
+		Doctype:         doctype,
 	}
 	if err := c.AddPointTransaction(ctx, fromID, outTransaction); err != nil {
 		return "",fmt.Errorf("添加支出方交易记录失败: %v", err)
@@ -397,6 +400,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		InfoID:          infoID,
 		Timestamp:       timestamp,
 		Status:          "success",
+		Doctype:         doctype,
 	}
 	if err := c.AddPointTransaction(ctx, toID, inTransaction); err != nil {
 		return "",fmt.Errorf("添加收入方交易记录失败: %v", err)

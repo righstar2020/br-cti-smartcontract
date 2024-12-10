@@ -39,15 +39,15 @@ type NonceRecord struct {
 func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (string, error) {
 	// 创建用户信息
 	userRigisterData := msgstruct.UserRegisterMsgData{
-		UserName:      "Admin",                            // 用户名
-		PublicKey:     "hello world",                      // 公钥
+		UserName:  "Admin",       // 用户名
+		PublicKey: "hello world", // 公钥
 	}
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
-		UserValue:   10000000000, // 管理员用户的积分值为 10000000000
-		UserCTIMap: make(map[string]int),    // 空的CTI映射
-		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
-		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
+		UserValue:  10000000000,          // 管理员用户的积分值为 10000000000
+		UserCTIMap: make(map[string]int), // 空的CTI映射
+		CTIBuyMap:  make(map[string]int), // 空的CTI购买映射
+		CTISaleMap: make(map[string]int), // 空的CTI销售映射
 	}
 	user_id, err := c.UserContract.RegisterUser(ctx, userRigisterData)
 	if err != nil {
@@ -89,23 +89,24 @@ func (c *MainContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextI
 func (c *MainContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	return c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
 }
-//查询用户拥有的情报(上传+购买的)
+
+// 查询用户拥有的情报(上传+购买的)
 func (c *MainContract) QueryUserOwnCTIInfos(ctx contractapi.TransactionContextInterface, userID string) (*typestruct.UserOwnCTIInfos, error) {
 	uploadCTIInfos, err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
 	if err != nil || uploadCTIInfos == nil {
 		uploadCTIInfos = []typestruct.CtiInfo{} // 初始化为空数组而不是nil
 	}
-	
+
 	purchaseCTIInfos, err := c.UserPointContract.QueryUserPurchasedCTIs(ctx, userID)
 	if err != nil || purchaseCTIInfos == nil {
 		purchaseCTIInfos = []typestruct.CtiInfo{} // 初始化为空数组而不是nil
 	}
 
 	total := len(uploadCTIInfos) + len(purchaseCTIInfos)
-	userOwnCTIInfos := typestruct.UserOwnCTIInfos{	
-		UploadCTIInfos: uploadCTIInfos,
+	userOwnCTIInfos := typestruct.UserOwnCTIInfos{
+		UploadCTIInfos:   uploadCTIInfos,
 		PurchaseCTIInfos: purchaseCTIInfos,
-		Total: total,
+		Total:            total,
 	}
 	return &userOwnCTIInfos, nil
 }
@@ -223,7 +224,7 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 		return nil, fmt.Errorf("failed to unmarshal cti tx data: %v", err)
 	}
 	//验证通过后，注册情报信息
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID,TxMsgData.Nonce,ctiTxData)
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, ctiTxData)
 	if err != nil {
 		return nil, err
 	}
@@ -241,36 +242,36 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 }
 
 // 用户购买情报
-func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string,error) {
+func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string, error) {
 	//验证交易签名(返回交易数据和验证结果)
 	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return "",fmt.Errorf("transaction signature verification failed")
+		return "", fmt.Errorf("transaction signature verification failed")
 	}
 	//解析msgData
 	var purchaseCTITxData msgstruct.PurchaseCtiTxData
 	err = json.Unmarshal([]byte(TxMsgData.TxData), &purchaseCTITxData)
 	if err != nil {
-		return "",fmt.Errorf("failed to unmarshal msg data: %v", err)
+		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
 }
-//用户购买模型
-func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface, txMsgData string) (string,error) {
+
+// 用户购买模型
+func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface, txMsgData string) (string, error) {
 	//验证交易签名(返回交易数据和验证结果)
 	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
 	if err != nil {
-		return "",fmt.Errorf("transaction signature verification failed")
+		return "", fmt.Errorf("transaction signature verification failed")
 	}
 	//解析msgData
 	var purchaseModelTxData msgstruct.PurchaseModelTxData
 	err = json.Unmarshal([]byte(TxMsgData.TxData), &purchaseModelTxData)
 	if err != nil {
-		return "",fmt.Errorf("failed to unmarshal msg data: %v", err)
+		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	return c.UserPointContract.PurchaseModel(ctx, purchaseModelTxData, TxMsgData.Nonce)
 }
-
 
 // 验证交易随机数和签名
 func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInterface, msgData string) (*msgstruct.TxMsgData, error) {
