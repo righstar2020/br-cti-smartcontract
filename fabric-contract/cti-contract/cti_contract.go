@@ -259,7 +259,7 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 	}
 	defer resultsIterator.Close()
 
-	var ctiInfos []typestruct.CtiInfo
+	ctiInfos := []typestruct.CtiInfo{}
 	totalCount := 0
 
 	// 计算偏移量

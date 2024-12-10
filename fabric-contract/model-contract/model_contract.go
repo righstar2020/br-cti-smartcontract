@@ -168,7 +168,7 @@ func (c *ModelContract) QueryModelsByModelType(ctx contractapi.TransactionContex
 	defer resultsIterator.Close()
 
 	// 定义一个切片存储查询结果
-	var modelInfos []typestruct.ModelInfo
+	modelInfos := []typestruct.ModelInfo{}
 
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
