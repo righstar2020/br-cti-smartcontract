@@ -105,6 +105,11 @@ func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterfa
 func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，查询 Doctype 为 "model" 的所有信息
 	queryString := `{"selector":{"doctype":"model"}}`
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
@@ -152,126 +157,22 @@ func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.Transact
 	// 构造返回结构
 	modelQueryResult := typestruct.ModelQueryResult{
 		ModelInfos: modelInfos,
-		Total:      count,
+		Total:      totalCount,
 		Page:       page,
 		PageSize:   pageSize,
 	}
 
 	return &modelQueryResult, nil
 }
-
-// QueryModelsByModelType 根据模型类型查询
-func (c *ModelContract) QueryModelsByModelType(ctx contractapi.TransactionContextInterface, modelType int) ([]typestruct.ModelInfo, error) {
-	// 构建查询字符串，根据 ModelType 进行查询
-	queryString := fmt.Sprintf(`{"selector":{"model_type":%d}}`, modelType)
-
-	// 执行查询
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute rich query: %v", err)
-	}
-	defer resultsIterator.Close()
-
-	// 定义一个切片存储查询结果
-	modelInfos := []typestruct.ModelInfo{}
-
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			fmt.Printf("failed to get next query result: %v", err)
-			continue
-		}
-
-		// 将查询结果反序列化为 ModelInfo 结构体
-		var modelInfo typestruct.ModelInfo
-		err = json.Unmarshal(queryResponse.Value, &modelInfo)
-		if err != nil {
-			fmt.Printf("failed to unmarshal model info: %v", err)
-			continue
-		}
-
-		// 将结果追加到切片
-		modelInfos = append(modelInfos, modelInfo)
-	}
-
-	// 返回查询结果
-	return modelInfos, nil
-}
-
-// QueryModelsByRefCTIId 根据CTIid查询
-func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
-	// 构建查询字符串
-	queryString := fmt.Sprintf(`{"selector":{"ref_cti_id":"%s"}}`, refCTIId)
-
-	// 执行查询
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %v", err)
-	}
-	defer resultsIterator.Close()
-
-	var models []typestruct.ModelInfo
-
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
-		}
-
-		var model typestruct.ModelInfo
-		err = json.Unmarshal(queryResponse.Value, &model)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
-		}
-
-		models = append(models, model)
-	}
-
-	// 返回结果
-	return models, nil
-}
-
-// QueryModelInfoByCreatorUserID 根据创建者ID查询
-func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
-	// 构建查询字符串
-	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userId)
-
-	// 执行查询
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %v", err)
-	}
-	defer resultsIterator.Close()
-
-	var models []typestruct.ModelInfo
-
-	// 遍历查询结果
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get next query result: %v", err)
-		}
-
-		var model typestruct.ModelInfo
-		err = json.Unmarshal(queryResponse.Value, &model)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
-		}
-
-		models = append(models, model)
-	}
-
-	// 返回结果
-	return models, nil
-}
-
 // QueryModelsByModelTypeWithPagination 根据模型类型分页查询
 func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，根据 ModelType 进行查询
 	queryString := fmt.Sprintf(`{"selector":{"doctype":"model", "model_type":%d}}`, modelType)
-
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
@@ -321,8 +222,81 @@ func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.Transact
 	// 返回查询结果
 	return &typestruct.ModelQueryResult{
 		ModelInfos: modelInfos,
-		Total:      count,
+		Total:      totalCount,
 		Page:       page,
 		PageSize:   pageSize,
 	}, nil
 }
+
+
+// QueryModelsByRefCTIId 根据CTIid查询
+func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContextInterface, refCTIId string) ([]typestruct.ModelInfo, error) {
+	// 构建查询字符串
+	queryString := fmt.Sprintf(`{"selector":{"ref_cti_id":"%s"}}`, refCTIId)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var models []typestruct.ModelInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get next query result: %v", err)
+		}
+
+		var model typestruct.ModelInfo
+		err = json.Unmarshal(queryResponse.Value, &model)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+		}
+
+		models = append(models, model)
+	}
+
+	// 返回结果
+	return models, nil
+}
+
+// QueryModelInfoByCreatorUserID 根据创建者ID查询
+func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
+	// 构建查询字符串
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userId)
+
+
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var models []typestruct.ModelInfo
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get next query result: %v", err)
+		}
+
+		var model typestruct.ModelInfo
+		err = json.Unmarshal(queryResponse.Value, &model)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal query result: %v", err)
+		}
+
+		models = append(models, model)
+	}
+
+	// 返回结果
+	return models, nil
+}
+
+

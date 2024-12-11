@@ -252,6 +252,12 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 	// 构建查询字符串，根据情报类型查询
 	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
 
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
+
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
@@ -260,7 +266,7 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 	defer resultsIterator.Close()
 
 	ctiInfos := []typestruct.CtiInfo{}
-	totalCount := 0
+	
 
 	// 计算偏移量
 	offset := pageSize * (page - 1)
@@ -313,15 +319,23 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报
 	queryString := `{"selector":{"doctype":"cti"}}`
 
+
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
+
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
 		return nil, fmt.Errorf("执行查询失败: %v", err)
 	}
 	defer resultsIterator.Close()
+	
+	
 
 	ctiInfos := []typestruct.CtiInfo{}
-	totalCount := 0
 
 	// 计算偏移量
 	offset := pageSize * (page - 1)

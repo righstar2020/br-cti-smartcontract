@@ -297,7 +297,6 @@ func (c *MainContract) VerifyTxSignature(ctx contractapi.TransactionContextInter
 	return &txMsgData, nil
 
 	//暂时取消交易签名验证
-	// ���处理实际交易时验证
 	// err = c.VerifyTransactionReplay(ctx, txMsgData.Nonce, txMsgData.UserID, txMsgData.NonceSignature)
 	// if err != nil {
 	// 	// 交易被重放或 nonce 无效
@@ -495,7 +494,7 @@ func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInter
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user statistics: %v", err)
 	}
-	userOwnCtiInfo.UserUploadCount = len(UserUploadCtiList)
+	userOwnCtiInfo.UserCTIUploadCount = len(UserUploadCtiList)
 	return userOwnCtiInfo, nil
 }
 
