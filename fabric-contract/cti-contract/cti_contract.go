@@ -171,10 +171,29 @@ func (c *CTIContract) QueryCTIInfoByCTIHash(ctx contractapi.TransactionContextIn
 	return nil, fmt.Errorf("the cti with hash %s does not exist", ctiHash)
 }
 
+//根据创建者ID查询相关情报总数量
+func (c *CTIContract) QueryCTITotalCountByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) (int, error) {
+	// 构建查询字符串，根据创建者ID进行查询
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s","doctype":"cti"}}`, userID)
+
+	// 执行查询
+	_,metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString,9999999,"")
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute query: %v", err)
+	}
+	totalCount:=metadata.FetchedRecordsCount
+	if totalCount >0 {
+		return int(totalCount),nil
+	}
+
+	return 0, nil
+}
+
+
 // QueryCTIInfoByCreatorUserID 根据创建者ID查询所有相关情报信息
 func (c *CTIContract) QueryCTIInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) ([]typestruct.CtiInfo, error) {
 	// 构建查询字符串，根据创建者ID进行查询
-	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userID)
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s","doctype":"cti"}}`, userID)
 
 	// 执行查询
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)

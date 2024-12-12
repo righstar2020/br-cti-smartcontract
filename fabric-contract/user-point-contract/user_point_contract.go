@@ -52,7 +52,7 @@ func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContex
 
 // TransferPoints 处理积分转移和相关状态更新
 func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, ctiID string) error {
+	fromID string, toID string, points int, goodID string, doctype string) error {
 
 	// 获取买方积分信息
 	fromPointInfo, err := c.QueryUserPointInfo(ctx, fromID)
@@ -65,15 +65,26 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return fmt.Errorf("获取卖方积分信息失败: %v", err)
 	}
-	// 更新买方积分信息
-	fromPointInfo.UserValue -= points
-	fromPointInfo.UserCTIMap[ctiID] = points
-	fromPointInfo.CTIBuyMap[ctiID] = points
+	if doctype == "cti" {
+		// 更新买方积分信息
+		fromPointInfo.UserValue -= points
+		fromPointInfo.UserCTIMap[goodID] = points
+		fromPointInfo.CTIBuyMap[goodID] = points
 
-	// 更新卖方积分信息
-	toPointInfo.UserValue += points
-	toPointInfo.CTISaleMap[ctiID] = points
+		// 更新卖方积分信息
+		toPointInfo.UserValue += points
+		toPointInfo.CTISaleMap[goodID] = points
+	} 
+	if doctype == "model" {
+		// 更新买方积分信息
+		fromPointInfo.UserValue -= points
+		fromPointInfo.UserModelMap[goodID] = points
+		fromPointInfo.ModelBuyMap[goodID] = points
 
+		// 更新卖方积分信息
+		toPointInfo.UserValue += points
+		toPointInfo.ModelSaleMap[goodID] = points
+	}
 	// 更新买方UserPointInfo
 	fromPointInfoBytes, err := json.Marshal(fromPointInfo)
 	if err != nil {
@@ -120,12 +131,13 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	ctiID := purchaseCTITxData.CTIID
 	sellerID := ctiInfo.CreatorUserID
 
+	doctype := "cti"
 	// 处理积分转移
-	err = c.TransferPoints(ctx, userID, sellerID, ctiInfo.Value, ctiID)
+	err = c.TransferPoints(ctx, userID, sellerID, ctiInfo.Value, ctiID, doctype)
 	if err != nil {
 		return "", fmt.Errorf("积分转移失败: %v", err)
 	}
-	doctype := "cti"
+	
 	// 创建交易记录
 	transaction_id, err := c.CreateBilateralTransactions(ctx, userID, sellerID, ctiInfo.Value, ctiID, nonce, doctype)
 	if err != nil {
@@ -164,12 +176,13 @@ func (c *UserPointContract) PurchaseModel(ctx contractapi.TransactionContextInte
 	modelID := purchaseModelTxData.ModelID
 	sellerID := modelInfo.CreatorUserID
 
+	doctype := "model"
 	// 处理积分转移
-	err = c.TransferPoints(ctx, userID, sellerID, modelInfo.Value, modelID)
+	err = c.TransferPoints(ctx, userID, sellerID, modelInfo.Value, modelID, doctype)
 	if err != nil {
 		return "", fmt.Errorf("积分转移失败: %v", err)
 	}
-	doctype := "model"
+	
 
 	// 创建交易记录
 	transaction_id, err := c.CreateBilateralTransactions(ctx, userID, sellerID, modelInfo.Value, modelID, nonce, doctype)

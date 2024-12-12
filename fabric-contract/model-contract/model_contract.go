@@ -262,11 +262,27 @@ func (c *ModelContract) QueryModelsByRefCTIId(ctx contractapi.TransactionContext
 	// 返回结果
 	return models, nil
 }
+//根据创建者ID查询相关情报总数量
+func (c *ModelContract) QueryModelTotalCountByCreatorUserID(ctx contractapi.TransactionContextInterface, userID string) (int, error) {
+	// 构建查询字符串，根据创建者ID进行查询
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s","doctype":"model"}}`, userID)
 
+	// 执行查询
+	_,metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString,9999999,"")
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute query: %v", err)
+	}
+	totalCount:=metadata.FetchedRecordsCount
+	if totalCount >0 {
+		return int(totalCount),nil
+	}
+
+	return 0, nil
+}
 // QueryModelInfoByCreatorUserID 根据创建者ID查询
 func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
 	// 构建查询字符串
-	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s"}}`, userId)
+	queryString := fmt.Sprintf(`{"selector":{"creator_user_id":"%s","doctype":"model"}}`, userId)
 
 
 

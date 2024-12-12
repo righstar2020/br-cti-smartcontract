@@ -13,7 +13,11 @@ type UserPointInfo struct {
 	UserValue  int            `json:"user_value"`   //用户积分
 	UserCTIMap map[string]int `json:"user_cti_map"` //用户拥有的情报map
 	CTIBuyMap  map[string]int `json:"cti_buy_map"`  //用户购买的情报map
-	CTISaleMap map[string]int `json:"cti_sale_map"` //用户销售的情报map
+	CTISaleMap  map[string]int `json:"cti_sale_map"`  //用户销售的情报map
+
+	UserModelMap map[string]int `json:"user_model_map"` //用户拥有的模型map
+	ModelBuyMap map[string]int `json:"model_buy_map"` //用户购买的模型map
+	ModelSaleMap map[string]int `json:"model_sale_map"` //用户销售的模型map
 }
 
 // 用户详细信息
@@ -68,8 +72,9 @@ type DataSatisticsInfo struct {
 	TotalModelDataNum  int            `json:"total_model_data_num"`  // 模型数据总数
 	TotalModelDataSize int            `json:"total_model_data_size"` // 模型数据总大小
 	CTITypeDataNum     map[string]int `json:"cti_type_data_num"`     // 情报分类型数据数量
-	IOCsDataNum        map[string]int `json:"iocs_data_num"`         // IOCs分类型数据数量
 	ModelTypeDataNum   map[string]int `json:"model_type_data_num"`   // 模型分类型数据数量
+	IOCsDataNum        map[string]int `json:"iocs_data_num"`         // IOCs分类型数据数量
+	
 }
 
 type CtiSummaryInfo struct {

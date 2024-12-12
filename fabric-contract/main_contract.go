@@ -490,11 +490,17 @@ func (c *MainContract) GetUserStatistics(ctx contractapi.TransactionContextInter
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user statistics: %v", err)
 	}
-	UserUploadCtiList, err := c.CTIContract.QueryCTIInfoByCreatorUserID(ctx, userID)
+	UserCTIUploadCount, err := c.CTIContract.QueryCTITotalCountByCreatorUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user statistics: %v", err)
 	}
-	userOwnCtiInfo.UserCTIUploadCount = len(UserUploadCtiList)
+	userOwnCtiInfo.UserCTIUploadCount = UserCTIUploadCount
+
+	UserModelUploadCount, err := c.ModelContract.QueryModelTotalCountByCreatorUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user statistics: %v", err)
+	}
+	userOwnCtiInfo.UserModelUploadCount = UserModelUploadCount
 	return userOwnCtiInfo, nil
 }
 
