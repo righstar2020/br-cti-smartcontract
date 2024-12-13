@@ -168,7 +168,7 @@ func (c *DataContract) GetUpchainTrend(ctx contractapi.TransactionContextInterfa
 		}
 		trendBytes, err := json.Marshal(trend)
 		if err != nil {
-			return nil, fmt.Errorf("序列化上链趋势数据���败: %v", err)
+			return nil, fmt.Errorf("序列化上链趋势数据失败败: %v", err)
 		}
 		ctx.GetStub().PutState(UPCHAIN_TREND_KEY, trendBytes)
 	}
