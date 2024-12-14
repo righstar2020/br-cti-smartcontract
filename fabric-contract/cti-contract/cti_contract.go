@@ -293,7 +293,6 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
-		totalCount++
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
 			fmt.Printf("获取下一个查询结果失败: %v", err)
@@ -362,7 +361,6 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
-		totalCount++
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
 			fmt.Printf("获取下一个查询结果失败: %v", err)
