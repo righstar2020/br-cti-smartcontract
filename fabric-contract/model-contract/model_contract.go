@@ -103,8 +103,8 @@ func (c *ModelContract) QueryModelInfo(ctx contractapi.TransactionContextInterfa
 
 // QueryAllModelInfoWithPagination 分页查询所有模型信息
 func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
-	// 构建查询字符串，查询 Doctype 为 "model" 的所有信息 并按创建时间降序排序
-	queryString := `{"selector":{"doctype":"model"},"sort":[{"create_time":"desc"}]}`
+	// 构建查询字符串，查询 Doctype 为 "model" 的所有信息
+	queryString := `{"selector":{"doctype":"model"}}`
 	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
 	if err != nil {
 		return nil, fmt.Errorf("获取总数失败: %v", err)
@@ -167,7 +167,7 @@ func (c *ModelContract) QueryAllModelInfoWithPagination(ctx contractapi.Transact
 // QueryModelsByModelTypeWithPagination 根据模型类型分页查询
 func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	// 构建查询字符串，根据 ModelType 进行查询
-	queryString := fmt.Sprintf(`{"selector":{"doctype":"model", "model_type":%d},"sort":[{"create_time":"desc"}]}}`, modelType)
+	queryString := fmt.Sprintf(`{"selector":{"doctype":"model", "model_type":%d}}`, modelType)
 	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
 	if err != nil {
 		return nil, fmt.Errorf("获取总数失败: %v", err)
