@@ -268,8 +268,13 @@ func (c *CTIContract) QueryCTIInfoByType(ctx contractapi.TransactionContextInter
 }
 
 func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
-	// 构建查询字符串，根据情报类型查询
-	queryString := fmt.Sprintf(`{"selector":{"cti_type":%d}}`, ctiType)
+	// 构建查询字符串，根据情报类型查询并按创建时间降序排序
+	queryString := fmt.Sprintf(`{
+		"selector": {
+			"cti_type": %d
+		},
+		"sort": [{"create_time": "desc"}]
+	}`, ctiType)
 
 	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
 	if err != nil {
@@ -334,8 +339,8 @@ func (c *CTIContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.Transacti
 
 // QueryAllCTIInfoWithPagination 分页查询所有情报信息
 func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
-	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报
-	queryString := `{"selector":{"doctype":"cti"}}`
+	// 构建查询字符串，查询 Doctype 为 "cti" 的所有情报 并按创建时间降序排序
+	queryString := `{"selector":{"doctype":"cti"},"sort":[{"create_time":"desc"}]}`
 
 
 	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
