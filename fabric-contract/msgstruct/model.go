@@ -22,7 +22,7 @@ type TxMsgData struct {
 	TxSignature string `json:"tx_signature"` //交易签名(Base64 ASN.1 DER)
 	NonceSignature string `json:"nonce_signature"` //随机数签名(Base64 ASN.1 DER)
 }
-
+//----------------------------------情报----------------------------------
 //情报交易数据结构
 type CtiTxData struct {
 	CTIID          string   `json:"cti_id"`           // 情报ID(链上生成)
@@ -44,17 +44,15 @@ type CtiTxData struct {
 	Need           int      `json:"need"`             // 情报需求量(销售数量)
 	Value          int      `json:"value"`            // 情报价值（积分）
 	CompreValue    int      `json:"compre_value"`     // 综合价值（积分激励算法定价）
+	IncentiveMechanism int `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 }
 
 type PurchaseCtiTxData struct {
 	CTIID string `json:"cti_id"` // 情报ID
 	UserID string `json:"user_id"` // 用户ID
 }
-type PurchaseModelTxData struct {
-	ModelID string `json:"model_id"` // 模型ID
-	UserID string `json:"user_id"` // 用户ID
-}
 
+//----------------------------------模型----------------------------------
 //模型交易数据结构
 type ModelTxData struct {
 	ModelID          string   `json:"model_id"`           // 模型ID
@@ -72,11 +70,15 @@ type ModelTxData struct {
 	ModelSize        int      `json:"model_size"`         // 模型大小
 	ModelDataSize    int      `json:"model_data_size"`    // 模型训练数据大小
 	ModelDataIPFSHash string   `json:"model_data_ipfs_hash"` // 模型训练数据IPFS地址
+	IncentiveMechanism int `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 	Value            int      `json:"value"`                // 模型价值
 	ModelIPFSHash    string   `json:"model_ipfs_hash"`      // 模型IPFS地址
 	RefCTIId         string   `json:"ref_cti_id"`           // 关联情报ID(使用哪个情报训练的模型)
 }
-
+type PurchaseModelTxData struct {
+	ModelID string `json:"model_id"` // 模型ID
+	UserID string `json:"user_id"` // 用户ID
+}
 // 模型算法映射表
 var ModelAlgorithms = map[string][]string{
 	//分类模型
@@ -112,3 +114,31 @@ var ModelAlgorithms = map[string][]string{
         "BernoulliNB",         // 伯努利朴素贝叶斯
     },
 }
+//----------------------------------评论----------------------------------
+//评论交易数据结构
+type CommentTxData struct {
+	CommentID string `json:"comment_id"` // 评论ID
+	UserID string `json:"user_id"` // 用户ID
+	CommentDocType string `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
+	CommentRefID string `json:"comment_ref_id"` // 评论关联ID(情报ID、模型ID)
+	CommentScore float64 `json:"comment_score"` // 评论分数
+	CommentStatus int `json:"comment_status"` // 评论状态(1:待审核、2:已审核、3:已拒绝)
+	CommentContent string `json:"comment_content"` // 评论内容
+	CreateTime string `json:"create_time"` // 创建时间
+	DocType string `json:"doctype"` // 文档类型
+}
+
+//评论审核交易数据结构
+type ApproveCommentTxData struct {
+	UserID string `json:"user_id"` // 审核用户ID
+	CommentID string `json:"comment_id"` // 评论ID
+	Status int `json:"status"` // 审核状态(1:通过、2:拒绝)
+}
+//----------------------------------激励机制----------------------------------
+//激励交易数据结构
+type IncentiveTxData struct {
+	RefID string `json:"ref_id"` // 关联ID(情报ID、模型ID)
+	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	Mechanism int `json:"mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
+}
+

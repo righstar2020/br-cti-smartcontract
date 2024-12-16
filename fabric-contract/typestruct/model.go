@@ -1,5 +1,6 @@
 package typestruct
 
+
 // 用户结构
 type UserInfo struct {
 	UserID        string `json:"user_id"`         //用户ID(公钥sha256)
@@ -45,6 +46,7 @@ type CtiInfo struct {
 	DataSourceHash     string   `json:"data_source_hash"`      // 数据源HASH（sha256）
 	DataSourceIPFSHash string   `json:"data_source_ipfs_hash"` // 数据源IPFS地址
 	Need               int      `json:"need"`                  // 情报需求量(销售数量)
+	IncentiveMechanism int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 	Value              int      `json:"value"`                 // 情报价值（积分）
 	CompreValue        int      `json:"compre_value"`          // 综合价值（积分激励算法定价）
 	CreateTime         string   `json:"create_time"`           // 情报创建时间（由合约生成）
@@ -104,7 +106,9 @@ type ModelInfo struct {
 	ModelDataSize       int      `json:"model_data_size"`       // 模型训练数据大小
 	ModelDataIPFSHash   string   `json:"model_data_ipfs_hash"`  // 模型训练数据IPFS地址
 	ModelIPFSHash       string   `json:"model_ipfs_hash"`       // 模型IPFS地址
+	IncentiveMechanism  int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 	Value               int      `json:"value"`                 // 模型价值
+	Need                int      `json:"need"`                  // 模型需求量
 	RefCTIId            string   `json:"ref_cti_id"`            // 关联情报ID(使用哪个情报训练的模型)
 	CreateTime          string   `json:"create_time"`           // 模型创建时间（由合约生成）
 	Doctype             string   `json:"doctype"`               // 文档类型
@@ -164,3 +168,48 @@ type UpchainTrendInfo struct {
 	CTIUpchain   map[string]int `json:"cti_upchain"`   // 情报上链趋势
 	ModelUpchain map[string]int `json:"model_upchain"` // 模型上链趋势
 }
+
+//----------------------------------评论----------------------------------
+//评论数据结构
+type CommentInfo struct {
+	CommentID string `json:"comment_id"` // 评论ID
+	UserID string `json:"user_id"` // 用户ID
+	UserLevel int `json:"user_level"` // 用户等级(1:普通用户value<1000、2:高级用户value>1000、3:专家用户value>20000)
+	CommentDocType string `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
+	CommentRefID string `json:"comment_ref_id"` // 评论关联ID(情报ID、模型ID)
+	CommentScore float64 `json:"comment_score"` // 评论分数
+	CommentStatus int `json:"comment_status"` // 评论状态(1:待审核、2:已审核、3:已拒绝)
+	CommentContent string `json:"comment_content"` // 评论内容
+	CreateTime string `json:"create_time"` // 创建时间
+	Doctype string `json:"doctype"` // 文档类型(cti、model)
+}
+
+//评论审核数据结构
+type ApproveCommentInfo struct {
+	UserID string `json:"user_id"` // 审核用户ID
+	CommentID string `json:"comment_id"` // 评论ID
+	Status int `json:"status"` // 审核状态(1:通过、2:拒绝)
+	CreateTime string `json:"create_time"` // 审核时间
+}
+
+// 评论查询结果
+type CommentQueryResult struct {
+	CommentInfos []CommentInfo `json:"comment_infos"`
+	Total        int           `json:"total"`
+	Page         int           `json:"page"`
+	PageSize     int           `json:"page_size"`
+}
+//----------------------------------激励机制信息----------------------------------
+// 文档激励信息
+type DocIncentiveInfo struct {
+	IncentiveID string `json:"incentive_id"` // 激励ID
+	RefID string `json:"ref_id"` // 关联ID
+	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	HistoryValue int `json:"history_value"` // 历史积分值
+	IncentiveMechanism int `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
+	IncentiveValue int `json:"incentive_value"` // 激励值(当前积分)
+	CommentScore int `json:"comment_score"` // 评论分数
+	Need int `json:"need"` // 需求量
+	CreateTime string `json:"create_time"` // 创建时间
+}
+

@@ -149,7 +149,12 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	if err != nil {
 		return transaction_id, fmt.Errorf("更新交易计数失败: %v", err)
 	}
-
+	// 更新CTI需求量
+	err = c.UpdateCTINeedAdd(ctx, ctiID,1)
+	if err != nil {
+		fmt.Printf("更新CTI需求量失败: %v", err)
+		return transaction_id,nil 
+	}
 	return transaction_id, nil
 }
 
@@ -195,7 +200,12 @@ func (c *UserPointContract) PurchaseModel(ctx contractapi.TransactionContextInte
 	if err != nil {
 		return transaction_id, fmt.Errorf("更新交易计数失败: %v", err)
 	}
-
+	// 更新模型需求量
+	err = c.UpdateModelNeedAdd(ctx,modelID, 1)
+	if err != nil {
+		fmt.Printf("更新模型需求量失败: %v", err)
+		return transaction_id,nil 
+	}
 	return transaction_id, nil
 }
 

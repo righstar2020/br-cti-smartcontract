@@ -314,5 +314,36 @@ func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.Transactio
 	// 返回结果
 	return models, nil
 }
+//----------------------------------更新模型信息函数----------------------------------
+//更新模型信息函数(Value)
+func (c *ModelContract) UpdateModelValue(ctx contractapi.TransactionContextInterface, modelID string, value int) error {
+	modelInfo, err := c.QueryModelInfo(ctx, modelID)
+	if err != nil {
+		return fmt.Errorf("failed to query model info: %v", err)
+	}
+	modelInfo.Value = value
+	modelAsBytes, err := json.Marshal(modelInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal model info: %v", err)
+	}
+	return ctx.GetStub().PutState(modelID, modelAsBytes)
+}
 
+//更新模型信息函数(Need)
+func (c *ModelContract) UpdateModelNeedAdd(ctx contractapi.TransactionContextInterface, modelID string, need int) error {
+	modelInfo, err := c.QueryModelInfo(ctx, modelID)
+	if err != nil {
+		return fmt.Errorf("failed to query model info: %v", err)
+	}
+	if modelInfo.Need == 0 {
+		modelInfo.Need = need
+	} else {
+		modelInfo.Need += need
+	}
+	modelAsBytes, err := json.Marshal(modelInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal model info: %v", err)
+	}
+	return ctx.GetStub().PutState(modelID, modelAsBytes)
+}
 

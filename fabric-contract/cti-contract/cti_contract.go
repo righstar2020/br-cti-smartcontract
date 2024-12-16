@@ -399,4 +399,35 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 
 	return queryResult, nil
 }
+//----------------------------------更新情报信息函数----------------------------------
+//更新情报信息函数(Value)
+func (c *CTIContract) UpdateCTIValue(ctx contractapi.TransactionContextInterface, ctiID string, value int) error {
 
+	ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
+	if err != nil {
+		return fmt.Errorf("failed to query CTI info: %v", err)
+	}
+	ctiInfo.Value = value
+	ctiAsBytes, err := json.Marshal(ctiInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CTI info: %v", err)
+	}
+	return ctx.GetStub().PutState(ctiID, ctiAsBytes)
+}
+//更新情报信息函数(Need)
+func (c *CTIContract) UpdateCTINeedAdd(ctx contractapi.TransactionContextInterface, ctiID string, need int) error {
+	ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
+	if err != nil {
+		return fmt.Errorf("failed to query CTI info: %v", err)
+	}
+	if ctiInfo.Need == 0 {
+		ctiInfo.Need = need
+	} else {
+		ctiInfo.Need += need
+	}
+	ctiAsBytes, err := json.Marshal(ctiInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CTI info: %v", err)
+	}
+	return ctx.GetStub().PutState(ctiID, ctiAsBytes)
+}
