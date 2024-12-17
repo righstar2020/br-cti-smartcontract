@@ -1,4 +1,3 @@
-
 package incentive_contract
 
 import (
@@ -11,7 +10,6 @@ import (
 	"encoding/base64"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
-	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
 	commentContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/comment-contract"
 )
 
@@ -26,7 +24,6 @@ const (
 type IncentiveContract struct {
 	ctiContract.CTIContract
 	modelContract.ModelContract
-	userPointContract.UserPointContract
 	commentContract.CommentContract
 }
 

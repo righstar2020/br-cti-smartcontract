@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	commentContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/comment-contract"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	dataContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/data-contract"
+	incentiveContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/incentive-contract"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
-	commentContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/comment-contract"
-	incentiveContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/incentive-contract"
 )
 
 // 主合约结构体
@@ -184,7 +184,35 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 }
 
 //--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
-
+// 注册情报信息
+func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
+	//验证交易签名(返回交易数据和验证结果)
+	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
+	if err != nil {
+		return nil, err
+	}
+	var ctiTxData msgstruct.CtiTxData
+	err = json.Unmarshal([]byte(TxMsgData.TxData), &ctiTxData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cti tx data: %v", err)
+	}
+	//验证通过后，注册情报信息
+	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, ctiTxData)
+	if err != nil {
+		return nil, err
+	}
+	//更新CTI相关的所有统计数据
+	err = c.DataContract.UpdateCTIStatistics(ctx, ctiInfo)
+	if err != nil {
+		return ctiInfo, err
+	}
+	//更新用户CTI的统计信息
+	err = c.UserPointContract.UpdateUserCTIStatistics(ctx, ctiInfo.CreatorUserID, 1)
+	if err != nil {
+		return ctiInfo, err
+	}
+	return ctiInfo, nil
+}
 // 注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.ModelInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -215,35 +243,7 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 	return modelInfo, nil
 }
 
-// 注册情报信息
-func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
-	//验证交易签名(返回交易数据和验证结果)
-	TxMsgData, err := c.VerifyTxSignature(ctx, txMsgData)
-	if err != nil {
-		return nil, err
-	}
-	var ctiTxData msgstruct.CtiTxData
-	err = json.Unmarshal([]byte(TxMsgData.TxData), &ctiTxData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cti tx data: %v", err)
-	}
-	//验证通过后，注册情报信息
-	ctiInfo, err := c.CTIContract.RegisterCTIInfo(ctx, TxMsgData.UserID, TxMsgData.Nonce, ctiTxData)
-	if err != nil {
-		return nil, err
-	}
-	//更新CTI相关的所有统计数据
-	err = c.DataContract.UpdateCTIStatistics(ctx, ctiInfo)
-	if err != nil {
-		return ctiInfo, err
-	}
-	//更新用户CTI的统计信息
-	err = c.UserPointContract.UpdateUserCTIStatistics(ctx, ctiInfo.CreatorUserID, 1)
-	if err != nil {
-		return ctiInfo, err
-	}
-	return ctiInfo, nil
-}
+
 
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string, error) {
@@ -258,7 +258,46 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
-	return c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
+	transactionID, err := c.UserPointContract.PurchaseCTI(ctx, purchaseCTITxData, TxMsgData.Nonce)
+	if err != nil {
+		return "", fmt.Errorf("failed to purchase cti: %v", err)
+	}
+	//其他逻辑
+	// 4. 批量处理非核心更新
+	// 使用通道来并行处理非核心更新
+	errCh := make(chan error, 3)
+	// 更新CTI交易总数
+	go func() {
+		errCh <- c.UserPointContract.UpdateCTITransactionCount(ctx)
+	}()
+	// 更新CTI需求量
+	go func() {
+		errCh <- c.CTIContract.UpdateCTINeedAdd(ctx, purchaseCTITxData.CTIID, 1)
+	}()
+
+	// 更新激励机制
+	go func() {
+		if _, err := c.IncentiveContract.RegisterDocIncentiveInfo(ctx, purchaseCTITxData.CTIID, "cti", TxMsgData.Nonce); err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	// 收集非核心操作的错误（不影响主流程）
+	var warnings []string
+	for i := 0; i < 3; i++ {
+		if err := <-errCh; err != nil {
+			warnings = append(warnings, err.Error())
+		}
+	}
+
+	// 如果有警告，记录日志但不影响交易
+	if len(warnings) > 0 {
+		fmt.Printf("交易成功完成，但有以下警告：%v\n", warnings)
+	}
+
+	return transactionID, nil
 }
 
 // 用户购买模型
@@ -274,7 +313,45 @@ func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
-	return c.UserPointContract.PurchaseModel(ctx, purchaseModelTxData, TxMsgData.Nonce)
+	transactionID, err := c.UserPointContract.PurchaseModel(ctx, purchaseModelTxData, TxMsgData.Nonce)
+	if err != nil {
+		return "", fmt.Errorf("failed to purchase cti: %v", err)
+	}
+	//其他逻辑
+	// 4. 批量处理非核心更新
+	// 使用通道来并行处理非核心更新
+	errCh := make(chan error, 3)
+	// 更新CTI交易总数
+	go func() {
+		errCh <- c.UserPointContract.UpdateCTITransactionCount(ctx)
+	}()
+	// 更新CTI需求量
+	go func() {
+		errCh <- c.ModelContract.UpdateModelNeedAdd(ctx, purchaseModelTxData.ModelID, 1)
+	}()
+
+	// 更新激励机制
+	go func() {
+		if _, err := c.IncentiveContract.RegisterDocIncentiveInfo(ctx, purchaseModelTxData.ModelID, "model", TxMsgData.Nonce); err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	// 收集非核心操作的错误（不影响主流程）
+	var warnings []string
+	for i := 0; i < 3; i++ {
+		if err := <-errCh; err != nil {
+			warnings = append(warnings, err.Error())
+		}
+	}
+
+	// 如果有警告，记录日志但不影响交易
+	if len(warnings) > 0 {
+		fmt.Printf("交易成功完成，但有以下警告：%v\n", warnings)
+	}
+	return transactionID,nil
 }
 
 // 验证交易随机数和签名
@@ -517,7 +594,8 @@ func (c *MainContract) QueryPointTransactions(ctx contractapi.TransactionContext
 func (c *MainContract) QueryUserAccountList(ctx contractapi.TransactionContextInterface) ([]string, error) {
 	return c.UserContract.QueryUserAccountList(ctx)
 }
-//-------------------------------------------------用户评论-------------------------------------------------
+
+// -------------------------------------------------用户评论-------------------------------------------------
 // 注册评论
 func (c *MainContract) RegisterComment(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CommentInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -554,15 +632,18 @@ func (c *MainContract) ApproveComment(ctx contractapi.TransactionContextInterfac
 func (c *MainContract) QueryComment(ctx contractapi.TransactionContextInterface, commentID string) (*typestruct.CommentInfo, error) {
 	return c.CommentContract.QueryComment(ctx, commentID)
 }
-//查询指定RefID的所有评论
+
+// 查询指定RefID的所有评论
 func (c *MainContract) QueryAllCommentsByRefID(ctx contractapi.TransactionContextInterface, refID string) ([]typestruct.CommentInfo, error) {
 	return c.CommentContract.QueryAllCommentsByRefID(ctx, refID)
 }
+
 // 分页查询评论列表
 func (c *MainContract) QueryCommentsByRefIDWithPagination(ctx contractapi.TransactionContextInterface, refID string, page int, pageSize int) (*typestruct.CommentQueryResult, error) {
 	return c.CommentContract.QueryCommentsByRefIDWithPagination(ctx, refID, page, pageSize)
 }
-//-------------------------------------------------激励机制-------------------------------------------------
+
+// -------------------------------------------------激励机制-------------------------------------------------
 // 注册文档激励信息
 func (c *MainContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.DocIncentiveInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -578,10 +659,12 @@ func (c *MainContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionConte
 	}
 	return c.IncentiveContract.RegisterDocIncentiveInfo(ctx, incentiveTxData.RefID, incentiveTxData.Doctype, TxMsgData.Nonce)
 }
+
 // 查询文档激励信息
 func (c *MainContract) QueryDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]*typestruct.DocIncentiveInfo, error) {
 	return c.IncentiveContract.QueryAllDocIncentiveInfo(ctx, refID, doctype)
 }
+
 // 主函数
 func main() {
 	chaincode, err := contractapi.NewChaincode(&MainContract{})

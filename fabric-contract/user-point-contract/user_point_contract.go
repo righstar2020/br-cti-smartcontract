@@ -144,17 +144,7 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 		return "", fmt.Errorf("创建交易记录失败: %v", err)
 	}
 
-	// 更新CTI交易总数
-	err = c.UpdateCTITransactionCount(ctx)
-	if err != nil {
-		return transaction_id, fmt.Errorf("更新交易计数失败: %v", err)
-	}
-	// 更新CTI需求量
-	err = c.UpdateCTINeedAdd(ctx, ctiID,1)
-	if err != nil {
-		fmt.Printf("更新CTI需求量失败: %v", err)
-		return transaction_id,nil 
-	}
+	
 	return transaction_id, nil
 }
 
