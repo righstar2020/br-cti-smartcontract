@@ -316,7 +316,7 @@ func (c *ModelContract) QueryModelInfoByCreatorUserID(ctx contractapi.Transactio
 }
 //----------------------------------更新模型信息函数----------------------------------
 //更新模型信息函数(Value)
-func (c *ModelContract) UpdateModelValue(ctx contractapi.TransactionContextInterface, modelID string, value int) error {
+func (c *ModelContract) UpdateModelValue(ctx contractapi.TransactionContextInterface, modelID string, value float64) error {
 	modelInfo, err := c.QueryModelInfo(ctx, modelID)
 	if err != nil {
 		return fmt.Errorf("failed to query model info: %v", err)

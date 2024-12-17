@@ -52,7 +52,7 @@ func (c *UserPointContract) QueryUserPointInfo(ctx contractapi.TransactionContex
 
 // TransferPoints 处理积分转移和相关状态更新
 func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, goodID string, doctype string) error {
+	fromID string, toID string, points float64, goodID string, doctype string) error {
 
 	// 获取买方积分信息
 	fromPointInfo, err := c.QueryUserPointInfo(ctx, fromID)
@@ -340,7 +340,7 @@ func (c *UserPointContract) QueryUserStatistics(ctx contractapi.TransactionConte
 type PointTransaction struct {
 	TransactionID   string `json:"transaction_id"`   // 交易ID
 	TransactionType string `json:"transaction_type"` // 交易类型：in/out
-	Points          int    `json:"points"`           // 积分数量
+	Points          float64    `json:"points"`           // 积分数量
 	OtherParty      string `json:"other_party"`      // 对方账户
 	InfoID          string `json:"info_id"`          // 相关情报ID
 	Timestamp       string `json:"timestamp"`        // 交易时间
@@ -394,7 +394,7 @@ func (c *UserPointContract) AddPointTransaction(ctx contractapi.TransactionConte
 
 // CreateBilateralTransactions 创建双方交易记录
 func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.TransactionContextInterface,
-	fromID string, toID string, points int, infoID string, nonce string, doctype string) (string, error) {
+	fromID string, toID string, points float64, infoID string, nonce string, doctype string) (string, error) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04")
 	// 从base64编码的nonce中提取随机数

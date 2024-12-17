@@ -401,7 +401,7 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 }
 //----------------------------------更新情报信息函数----------------------------------
 //更新情报信息函数(Value)
-func (c *CTIContract) UpdateCTIValue(ctx contractapi.TransactionContextInterface, ctiID string, value int) error {
+func (c *CTIContract) UpdateCTIValue(ctx contractapi.TransactionContextInterface, ctiID string, value float64) error {
 
 	ctiInfo, err := c.QueryCTIInfo(ctx, ctiID)
 	if err != nil {

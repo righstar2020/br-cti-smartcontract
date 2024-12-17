@@ -11,14 +11,14 @@ type UserInfo struct {
 }
 
 type UserPointInfo struct {
-	UserValue  int            `json:"user_value"`   //用户积分
-	UserCTIMap map[string]int `json:"user_cti_map"` //用户拥有的情报map
-	CTIBuyMap  map[string]int `json:"cti_buy_map"`  //用户购买的情报map
-	CTISaleMap  map[string]int `json:"cti_sale_map"`  //用户销售的情报map
+	UserValue  float64            `json:"user_value"`   //用户积分
+	UserCTIMap map[string]float64 `json:"user_cti_map"` //用户拥有的情报map
+	CTIBuyMap  map[string]float64 `json:"cti_buy_map"`  //用户购买的情报map
+	CTISaleMap  map[string]float64 `json:"cti_sale_map"`  //用户销售的情报map
 
-	UserModelMap map[string]int `json:"user_model_map"` //用户拥有的模型map
-	ModelBuyMap map[string]int `json:"model_buy_map"` //用户购买的模型map
-	ModelSaleMap map[string]int `json:"model_sale_map"` //用户销售的模型map
+	UserModelMap map[string]float64 `json:"user_model_map"` //用户拥有的模型map
+	ModelBuyMap map[string]float64 `json:"model_buy_map"` //用户购买的模型map
+	ModelSaleMap map[string]float64 `json:"model_sale_map"` //用户销售的模型map
 }
 
 // 用户详细信息
@@ -47,8 +47,8 @@ type CtiInfo struct {
 	DataSourceIPFSHash string   `json:"data_source_ipfs_hash"` // 数据源IPFS地址
 	Need               int      `json:"need"`                  // 情报需求量(销售数量)
 	IncentiveMechanism int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	Value              int      `json:"value"`                 // 情报价值（积分）
-	CompreValue        int      `json:"compre_value"`          // 综合价值（积分激励算法定价）
+	Value              float64      `json:"value"`                 // 情报价值（积分）
+	CompreValue        float64      `json:"compre_value"`          // 综合价值（积分激励算法定价）
 	CreateTime         string   `json:"create_time"`           // 情报创建时间（由合约生成）
 	Doctype            string   `json:"doctype"`               // 文档类型
 }
@@ -107,7 +107,7 @@ type ModelInfo struct {
 	ModelDataIPFSHash   string   `json:"model_data_ipfs_hash"`  // 模型训练数据IPFS地址
 	ModelIPFSHash       string   `json:"model_ipfs_hash"`       // 模型IPFS地址
 	IncentiveMechanism  int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	Value               int      `json:"value"`                 // 模型价值
+	Value               float64      `json:"value"`                 // 模型价值
 	Need                int      `json:"need"`                  // 模型需求量
 	RefCTIId            string   `json:"ref_cti_id"`            // 关联情报ID(使用哪个情报训练的模型)
 	CreateTime          string   `json:"create_time"`           // 模型创建时间（由合约生成）
@@ -153,10 +153,10 @@ type GlobalIOCsInfo struct {
 type SystemOverviewInfo struct {
 	BlockHeight       int `json:"block_height"`
 	TotalTransactions int `json:"total_transactions"`
-	CTIValue          int `json:"cti_value"`
+	CTIValue          float64 `json:"cti_value"`
 	CTICount          int `json:"cti_count"`
 	CTITransactions   int `json:"cti_transactions"`
-	ModelValue        int `json:"model_value"`
+	ModelValue        float64 `json:"model_value"`
 	ModelCount        int `json:"model_count"`
 	ModelTransactions int `json:"model_transactions"`
 	IOCsCount         int `json:"iocs_count"`
@@ -205,10 +205,10 @@ type DocIncentiveInfo struct {
 	IncentiveID string `json:"incentive_id"` // 激励ID
 	RefID string `json:"ref_id"` // 关联ID
 	Doctype string `json:"doctype"` // 文档类型(cti、model)
-	HistoryValue int `json:"history_value"` // 历史积分值
+	HistoryValue float64 `json:"history_value"` // 历史积分值
 	IncentiveMechanism int `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	IncentiveValue int `json:"incentive_value"` // 激励值(当前积分)
-	CommentScore int `json:"comment_score"` // 评论分数
+	IncentiveValue float64 `json:"incentive_value"` // 激励值(当前积分)
+	CommentScore float64 `json:"comment_score"` // 评论分数
 	Need int `json:"need"` // 需求量
 	CreateTime string `json:"create_time"` // 创建时间
 }

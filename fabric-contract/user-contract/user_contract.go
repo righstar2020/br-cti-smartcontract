@@ -70,12 +70,12 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
 		UserValue:   100, // 初始化用户的积分值为 100
-		UserCTIMap: make(map[string]int),    // 空的CTI映射
-		CTIBuyMap: 	make(map[string]int),      	// 空的CTI购买映射
-		CTISaleMap: make(map[string]int),      // 空的CTI销售映射
-		UserModelMap: make(map[string]int),      // 空的模型映射
-		ModelBuyMap: make(map[string]int),    // 空的模型购买映射
-		ModelSaleMap: make(map[string]int),   // 空的模型销售映射
+		UserCTIMap: make(map[string]float64),    // 空的CTI映射
+		CTIBuyMap: 	make(map[string]float64),      	// 空的CTI购买映射
+		CTISaleMap: make(map[string]float64),      // 空的CTI销售映射
+		UserModelMap: make(map[string]float64),      // 空的模型映射
+		ModelBuyMap: make(map[string]float64),    // 空的模型购买映射
+		ModelSaleMap: make(map[string]float64),   // 空的模型销售映射
 	}
 	
 	if err := c.UserPointContract.RegisterUserPointInfo(ctx, userID, newUserPointInfo); err != nil {

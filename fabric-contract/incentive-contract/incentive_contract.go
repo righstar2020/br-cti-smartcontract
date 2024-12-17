@@ -32,7 +32,7 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	var ctiInfo *typestruct.CtiInfo
 	var modelInfo *typestruct.ModelInfo
 	var err error
-	historyValue := 0
+	historyValue := 0.0
 	need := 0
 	incentiveMechanism := 1
 	if doctype == "cti" {
@@ -73,7 +73,7 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		Doctype: doctype,
 		HistoryValue: historyValue,
 		IncentiveMechanism: incentiveMechanism,
-		CommentScore: int(commentScore),//取整
+		CommentScore: commentScore,
 		Need: need,
 		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
@@ -170,7 +170,7 @@ func (c *IncentiveContract) GenerateIncentiveID(ctx contractapi.TransactionConte
 
 //----------------------------------不同激励机制计算积分----------------------------------
 //--------------------------------------积分激励--------------------------------------
-func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (int, error) {
+func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	alpha := 0.2
 	beta := 0.3
 	gamma := 0.5
@@ -180,16 +180,16 @@ func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.Transa
 	logCommentScore := math.Log(float64(docIncentiveInfo.CommentScore))*10
 	logNeed := math.Log(float64(docIncentiveInfo.Need))*10
 	incentiveValue := alpha * historyValue + beta * logCommentScore + gamma * logNeed
-	return int(incentiveValue), nil
+	return math.Round(incentiveValue*100)/100, nil
 }
 
 //--------------------------------------三方博弈--------------------------------------
-func (c *IncentiveContract) CalculateThreePartyGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (int, error) {
+func (c *IncentiveContract) CalculateThreePartyGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	return docIncentiveInfo.IncentiveValue, nil
 }
 
 //--------------------------------------演化博弈--------------------------------------	
-func (c *IncentiveContract) CalculateEvolutionGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (int, error) {
+func (c *IncentiveContract) CalculateEvolutionGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	return docIncentiveInfo.IncentiveValue, nil
 }
 
