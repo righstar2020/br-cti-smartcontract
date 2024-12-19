@@ -62,6 +62,7 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 		ModelDataIPFSHash:   modelTxData.ModelDataIPFSHash,
 		ModelIPFSHash:       modelTxData.ModelIPFSHash,
 		Value:               modelTxData.Value,
+		IncentiveMechanism: modelTxData.IncentiveMechanism,
 		RefCTIId:            modelTxData.RefCTIId,
 		CreateTime:          time.Now().Format("2006-01-02 15:04:05"),
 		Doctype:             doctype,

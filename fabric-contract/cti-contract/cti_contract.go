@@ -96,6 +96,7 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		DataSourceIPFSHash: ctiTxData.DataSourceIPFSHash,                                           // 数据源IPFS地址
 		Need:           0,                                                                          // 情报需求量
 		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
+		IncentiveMechanism: ctiTxData.IncentiveMechanism,                                           // 激励机制
 		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）
 		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
 		Doctype:        "cti",                                                                      // 文档类型

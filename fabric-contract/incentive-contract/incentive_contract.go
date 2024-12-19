@@ -134,14 +134,14 @@ func (c *IncentiveContract) QueryAllDocIncentiveInfo(ctx contractapi.Transaction
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, fmt.Errorf("获取下一个查询结果失败: %v", err)
+			fmt.Printf("获取下一个查询结果失败: %v", err)
 		}
 
 		// 将查询结果反序列化为 DocIncentiveInfo 结构体
 		var docIncentiveInfo typestruct.DocIncentiveInfo
 		err = json.Unmarshal(queryResponse.Value, &docIncentiveInfo)
 		if err != nil {
-			return nil, fmt.Errorf("反序列化文档激励信息失败: %v", err)
+			fmt.Printf("反序列化文档激励信息失败: %v", err)
 		}
 
 		docIncentiveInfos = append(docIncentiveInfos, &docIncentiveInfo)
