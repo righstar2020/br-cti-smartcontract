@@ -70,6 +70,7 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
 		UserValue:   100, // 初始化用户的积分值为 100
+		UserLevel: 1, // 初始化用户的等级为 1(初级用户)
 		UserCTIMap: make(map[string]float64),    // 空的CTI映射
 		CTIBuyMap: 	make(map[string]float64),      	// 空的CTI购买映射
 		CTISaleMap: make(map[string]float64),      // 空的CTI销售映射

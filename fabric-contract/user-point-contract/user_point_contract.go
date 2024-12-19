@@ -94,7 +94,16 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return fmt.Errorf("更新买方积分信息失败: %v", err)
 	}
-
+	//更新卖方等级
+	if toPointInfo.UserValue > 1000 && toPointInfo.UserLevel < 2 {
+		toPointInfo.UserLevel = 2
+	} else if toPointInfo.UserValue > 10000 && toPointInfo.UserLevel < 3 {
+		toPointInfo.UserLevel = 3
+	} else if toPointInfo.UserValue > 100000 && toPointInfo.UserLevel < 4 {
+		toPointInfo.UserLevel = 4
+	} else if toPointInfo.UserValue > 1000000 && toPointInfo.UserLevel < 5 {
+		toPointInfo.UserLevel = 5
+	}
 	// 更新卖方UserPointInfo
 	toPointInfoBytes, err := json.Marshal(toPointInfo)
 	if err != nil {

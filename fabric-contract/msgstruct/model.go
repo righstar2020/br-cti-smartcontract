@@ -119,6 +119,7 @@ var ModelAlgorithms = map[string][]string{
 type CommentTxData struct {
 	CommentID string `json:"comment_id"` // 评论ID
 	UserID string `json:"user_id"` // 用户ID
+	UserLevel float64 `json:"user_level"` // 用户等级(只记录评论发生时用户等级)
 	CommentDocType string `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
 	CommentRefID string `json:"comment_ref_id"` // 评论关联ID(情报ID、模型ID)
 	CommentScore float64 `json:"comment_score"` // 评论分数

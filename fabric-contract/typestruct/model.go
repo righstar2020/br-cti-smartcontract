@@ -12,6 +12,7 @@ type UserInfo struct {
 
 type UserPointInfo struct {
 	UserValue  float64            `json:"user_value"`   //用户积分
+	UserLevel int `json:"user_level"` // 用户等级(历史最高积分)
 	UserCTIMap map[string]float64 `json:"user_cti_map"` //用户拥有的情报map
 	CTIBuyMap  map[string]float64 `json:"cti_buy_map"`  //用户购买的情报map
 	CTISaleMap  map[string]float64 `json:"cti_sale_map"`  //用户销售的情报map
