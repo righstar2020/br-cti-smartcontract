@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
+	"math"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -67,7 +67,8 @@ func (c *ModelContract) RegisterModelInfo(ctx contractapi.TransactionContextInte
 		CreateTime:          time.Now().Format("2006-01-02 15:04:05"),
 		Doctype:             doctype,
 	}
-
+	//保留两位小数
+	modelInfo.Value = math.Round(modelInfo.Value*100) / 100
 	modelInfoJSONBytes, err := json.Marshal(modelInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal model info: %v", err)

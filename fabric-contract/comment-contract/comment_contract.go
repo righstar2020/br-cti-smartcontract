@@ -3,7 +3,7 @@ package comment_contract
 import (
 	"encoding/json"
 	"fmt"
-
+	"math"
 	"encoding/base64"
 	"time"
 
@@ -52,12 +52,13 @@ func (c *CommentContract) RegisterComment(ctx contractapi.TransactionContextInte
 	timestamp := time.Now().Format("0601021504")
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	// 生成评论 ID: 评论类型(1位) + 时间戳(12位,年月日时分) + 随机数(6位)
-	commentID := fmt.Sprintf("%s%s%s", commentTxData.CommentDocType, timestamp, randomNum)
+	commentID := fmt.Sprintf("%s_comment_%s%s", commentTxData.CommentDocType, timestamp, randomNum)
 
 	// 创建新的评论信息对象
 	newComment := typestruct.CommentInfo{
 		CommentID:      commentID,
 		UserID:         userID,
+		UserLevel:      commentTxData.UserLevel,
 		CommentDocType: commentTxData.CommentDocType,
 		CommentRefID:   commentTxData.CommentRefID,
 		CommentScore:   commentTxData.CommentScore,
@@ -66,7 +67,8 @@ func (c *CommentContract) RegisterComment(ctx contractapi.TransactionContextInte
 		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),
 		Doctype:        "comment",
 	}
-
+	//保留两位小数
+	newComment.CommentScore = math.Round(newComment.CommentScore*100) / 100
 	// 序列化为JSON
 	commentAsBytes, err := json.Marshal(newComment)
 	if err != nil {

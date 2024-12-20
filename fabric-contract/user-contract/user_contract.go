@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -79,6 +78,8 @@ func (c *UserContract) RegisterUser(ctx contractapi.TransactionContextInterface,
 		ModelSaleMap: make(map[string]float64),   // 空的模型销售映射
 	}
 	
+	
+
 	if err := c.UserPointContract.RegisterUserPointInfo(ctx, userID, newUserPointInfo); err != nil {
 		return "", fmt.Errorf("failed to register user point info: %v", err)
 	}

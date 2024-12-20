@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
+	"math"
 	"encoding/base64"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -65,15 +65,20 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return fmt.Errorf("获取卖方积分信息失败: %v", err)
 	}
+	//保留两位小数
+	points = math.Round(points*100) / 100
 	if doctype == "cti" {
+		
 		// 更新买方积分信息
 		fromPointInfo.UserValue -= points
 		fromPointInfo.UserCTIMap[goodID] = points
 		fromPointInfo.CTIBuyMap[goodID] = points
-
+		
 		// 更新卖方积分信息
 		toPointInfo.UserValue += points
 		toPointInfo.CTISaleMap[goodID] = points
+		
+
 	} 
 	if doctype == "model" {
 		// 更新买方积分信息
@@ -85,6 +90,8 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 		toPointInfo.UserValue += points
 		toPointInfo.ModelSaleMap[goodID] = points
 	}
+	//保留两位小数
+	fromPointInfo.UserValue = math.Round(fromPointInfo.UserValue*100) / 100
 	// 更新买方UserPointInfo
 	fromPointInfoBytes, err := json.Marshal(fromPointInfo)
 	if err != nil {
@@ -94,6 +101,10 @@ func (c *UserPointContract) TransferPoints(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return fmt.Errorf("更新买方积分信息失败: %v", err)
 	}
+
+
+	//保留两位小数
+	toPointInfo.UserValue = math.Round(toPointInfo.UserValue*100) / 100
 	//更新卖方等级
 	if toPointInfo.UserValue > 1000 && toPointInfo.UserLevel < 2 {
 		toPointInfo.UserLevel = 2
@@ -404,7 +415,9 @@ func (c *UserPointContract) AddPointTransaction(ctx contractapi.TransactionConte
 // CreateBilateralTransactions 创建双方交易记录
 func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.TransactionContextInterface,
 	fromID string, toID string, points float64, infoID string, nonce string, doctype string) (string, error) {
-
+	//保留两位小数
+	points = math.Round(points*100) / 100
+	
 	timestamp := time.Now().Format("2006-01-02 15:04")
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)

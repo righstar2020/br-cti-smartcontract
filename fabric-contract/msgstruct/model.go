@@ -119,14 +119,14 @@ var ModelAlgorithms = map[string][]string{
 type CommentTxData struct {
 	CommentID string `json:"comment_id"` // 评论ID
 	UserID string `json:"user_id"` // 用户ID
-	UserLevel float64 `json:"user_level"` // 用户等级(只记录评论发生时用户等级)
+	UserLevel int `json:"user_level"` // 用户等级(只记录评论发生时用户等级)
 	CommentDocType string `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
 	CommentRefID string `json:"comment_ref_id"` // 评论关联ID(情报ID、模型ID)
 	CommentScore float64 `json:"comment_score"` // 评论分数
 	CommentStatus int `json:"comment_status"` // 评论状态(1:待审核、2:已审核、3:已拒绝)
 	CommentContent string `json:"comment_content"` // 评论内容
 	CreateTime string `json:"create_time"` // 创建时间
-	DocType string `json:"doctype"` // 文档类型
+	DocType string `json:"doctype"` // 文档类型(comment)
 }
 
 //评论审核交易数据结构
@@ -139,7 +139,8 @@ type ApproveCommentTxData struct {
 //激励交易数据结构
 type IncentiveTxData struct {
 	RefID string `json:"ref_id"` // 关联ID(情报ID、模型ID)
-	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	IncentiveDoctype string `json:"incentive_doctype"` // 文档类型(cti、model)
 	Mechanism int `json:"mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 }
+
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
+	"math"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 )
@@ -576,6 +576,8 @@ func (c *DataContract) updateSystemOverview(ctx contractapi.TransactionContextIn
 	// 更新系统概览数据
 	overview.CTICount++
 	overview.CTIValue += ctiInfo.Value
+	//保留两位小数
+	overview.CTIValue = math.Round(overview.CTIValue*100) / 100
 	overview.IOCsCount += len(ctiInfo.IOCs)
 
 	blockHeight := 0

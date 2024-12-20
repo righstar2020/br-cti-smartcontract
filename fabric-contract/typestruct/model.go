@@ -182,7 +182,7 @@ type CommentInfo struct {
 	CommentStatus int `json:"comment_status"` // 评论状态(1:待审核、2:已审核、3:已拒绝)
 	CommentContent string `json:"comment_content"` // 评论内容
 	CreateTime string `json:"create_time"` // 创建时间
-	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	Doctype string `json:"doctype"` // 文档类型(comment)
 }
 
 //评论审核数据结构
@@ -201,16 +201,25 @@ type CommentQueryResult struct {
 	PageSize     int           `json:"page_size"`
 }
 //----------------------------------激励机制信息----------------------------------
+//激励查询结果
+type IncentiveQueryResult struct {
+	IncentiveInfos []DocIncentiveInfo `json:"incentive_infos"`
+	Total        int           `json:"total"`
+	Page         int           `json:"page"`
+	PageSize     int           `json:"page_size"`
+}
 // 文档激励信息
 type DocIncentiveInfo struct {
 	IncentiveID string `json:"incentive_id"` // 激励ID
 	RefID string `json:"ref_id"` // 关联ID
-	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	IncentiveDoctype string `json:"incentive_doctype"` // 文档类型(cti、model)
 	HistoryValue float64 `json:"history_value"` // 历史积分值
 	IncentiveMechanism int `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
 	IncentiveValue float64 `json:"incentive_value"` // 激励值(当前积分)
 	CommentScore float64 `json:"comment_score"` // 评论分数
 	Need int `json:"need"` // 需求量
+	TotalUserNum int `json:"total_user_num"` // 总用户数
 	CreateTime string `json:"create_time"` // 创建时间
+	Doctype string `json:"doctype"` // 文档类型(incentive)
 }
 

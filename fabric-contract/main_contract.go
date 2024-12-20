@@ -278,7 +278,11 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 
 	// 更新激励机制
 	go func() {
-		if _, err := c.IncentiveContract.RegisterDocIncentiveInfo(ctx, purchaseCTITxData.CTIID, "cti", TxMsgData.Nonce); err != nil {
+		incentiveInfo := typestruct.DocIncentiveInfo{
+			RefID: purchaseCTITxData.CTIID,
+			IncentiveDoctype: "cti",
+		}
+		if _, err := c.RegisterIncentiveInfo(ctx, incentiveInfo, TxMsgData.Nonce); err != nil {
 			errCh <- err
 			return
 		}
@@ -333,7 +337,11 @@ func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface
 
 	// 更新激励机制
 	go func() {
-		if _, err := c.IncentiveContract.RegisterDocIncentiveInfo(ctx, purchaseModelTxData.ModelID, "model", TxMsgData.Nonce); err != nil {
+		incentiveInfo := typestruct.DocIncentiveInfo{
+			RefID: purchaseModelTxData.ModelID,
+			IncentiveDoctype: "model",
+		}
+		if _, err := c.RegisterIncentiveInfo(ctx, incentiveInfo, TxMsgData.Nonce); err != nil {
 			errCh <- err
 			return
 		}
@@ -610,6 +618,17 @@ func (c *MainContract) RegisterComment(ctx contractapi.TransactionContextInterfa
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
+	//获取用户等级
+	userPointInfo, err := c.UserPointContract.QueryUserPointInfo(ctx, TxMsgData.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %v", err)
+	}
+	commentTxData.UserLevel = userPointInfo.UserLevel
+	//判断评论类型
+	commentDocType := commentTxData.CommentDocType
+	if commentDocType != "cti" && commentDocType != "model" {
+		commentDocType = "cti"
+	}
 	return c.CommentContract.RegisterComment(ctx, TxMsgData.UserID, TxMsgData.Nonce, commentTxData)
 }
 
@@ -658,12 +677,31 @@ func (c *MainContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionConte
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
-	return c.IncentiveContract.RegisterDocIncentiveInfo(ctx, incentiveTxData.RefID, incentiveTxData.Doctype, TxMsgData.Nonce)
+	IncentiveInfo := typestruct.DocIncentiveInfo{
+		RefID: incentiveTxData.RefID,
+		IncentiveDoctype: incentiveTxData.IncentiveDoctype,
+	}
+	return c.RegisterIncentiveInfo(ctx, IncentiveInfo, TxMsgData.Nonce)
+	
+}
+//注册激励信息
+func (c *MainContract) RegisterIncentiveInfo(ctx contractapi.TransactionContextInterface, IncentiveInfo typestruct.DocIncentiveInfo, nonce string) (*typestruct.DocIncentiveInfo, error) {
+	totalUserNum := 1
+	userAccountList, err := c.UserContract.QueryUserAccountList(ctx)
+	if err == nil {
+		totalUserNum = len(userAccountList)
+	}
+	return c.IncentiveContract.RegisterDocIncentiveInfo(ctx, IncentiveInfo.RefID, IncentiveInfo.IncentiveDoctype, nonce, totalUserNum)
 }
 
 // 查询文档激励信息
 func (c *MainContract) QueryDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]*typestruct.DocIncentiveInfo, error) {
 	return c.IncentiveContract.QueryAllDocIncentiveInfo(ctx, refID, doctype)
+}
+
+// 分页查询文档激励信息
+func (c *MainContract) QueryDocIncentiveInfoByPage(ctx contractapi.TransactionContextInterface, refID string, doctype string, page int, pageSize int) (*typestruct.IncentiveQueryResult, error) {
+	return c.IncentiveContract.QueryDocIncentiveInfoByPage(ctx, refID, doctype, page, pageSize)
 }
 
 // 主函数

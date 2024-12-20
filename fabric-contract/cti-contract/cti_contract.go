@@ -6,7 +6,7 @@ import (
 
 	"encoding/base64"
 	"time"
-
+	"math"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -101,7 +101,8 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
 		Doctype:        "cti",                                                                      // 文档类型
 	}
-
+	//保留两位小数
+	newCTI.Value = math.Round(newCTI.Value*100) / 100
 	// 将新 CTI 信息序列化为 JSON 字节数组
 	ctiAsBytes, err := json.Marshal(newCTI)
 	if err != nil {
