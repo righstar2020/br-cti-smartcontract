@@ -32,8 +32,8 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	var ctiInfo *typestruct.CtiInfo
 	var modelInfo *typestruct.ModelInfo
 	var err error
-	historyValue := 0.0
-	need := 0
+	historyValue := 10.0
+	need := 1
 	incentiveMechanism := 1
 	if doctype == "cti" {
 		ctiInfo, err = c.CTIContract.QueryCTIInfo(ctx, refID)
@@ -62,12 +62,13 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	if err != nil {
 		return nil, fmt.Errorf("获取评论信息失败: %v", err)
 	}
-	commentScore := 0.0
+	commentScore := 100.0
 	for _, commentInfo := range commentInfos {
 		commentScore += commentInfo.CommentScore
 	}
-	//计算评价分数
-	commentScore = commentScore / float64(len(commentInfos))
+	if len(commentInfos) > 0 {
+		commentScore = commentScore / float64(len(commentInfos))
+	}
 	//生成激励ID
 	incentiveID, err := c.GenerateIncentiveID(ctx, refID, doctype, nonce)
 	if err != nil {
@@ -82,9 +83,24 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		CommentScore: commentScore,
 		Need: need,
 		TotalUserNum: totalUserNum,
+		IncentiveValue: 10,//初始激励值
 		Doctype: "incentive",
 		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
+	//异常参数处理
+	if docIncentiveInfo.HistoryValue < 1 {
+		docIncentiveInfo.HistoryValue = 10
+	}
+	if docIncentiveInfo.CommentScore < 1 {
+		docIncentiveInfo.CommentScore = 1
+	}
+	if docIncentiveInfo.Need < 1 {
+		docIncentiveInfo.Need = 1
+	}
+	if docIncentiveInfo.TotalUserNum < 1 {
+		docIncentiveInfo.TotalUserNum = 1
+	}
+
 	//根据激励机制计算激励值
 	if incentiveMechanism == INCENTIVE_TYPE_POINT {
 		incentiveValue, err := c.CalculateCommonPointIncentive(ctx, &docIncentiveInfo)
@@ -114,6 +130,10 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		}
 		fmt.Println("计算激励值成功: ", incentiveValue)
 		docIncentiveInfo.IncentiveValue = incentiveValue
+	}
+	//异常参数处理
+	if docIncentiveInfo.IncentiveValue < 1 {
+		docIncentiveInfo.IncentiveValue = 1
 	}
 	fmt.Println("docIncentiveInfo: ", docIncentiveInfo)
 	//将激励信息写入区块链
@@ -244,17 +264,19 @@ func (c *IncentiveContract) QueryDocIncentiveInfoByPage(ctx contractapi.Transact
 }
 
 
-
-
-
-
-
 //----------------------------------不同激励机制计算积分----------------------------------
 //--------------------------------------积分激励--------------------------------------
 func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
-	alpha := 0.2
-	beta := 0.3
-	gamma := 0.5
+	alpha := 0.5
+	beta := 0.2
+	gamma := 0.3
+    //异常入参处理
+	if docIncentiveInfo.CommentScore < 1 {
+		docIncentiveInfo.CommentScore = 1
+	}
+	if docIncentiveInfo.Need < 1 {
+		docIncentiveInfo.Need = 1
+	}
 	//综合历史value、评论分数、需求量
 	historyValue := float64(docIncentiveInfo.HistoryValue)
 	//取log
@@ -286,9 +308,18 @@ func (c *IncentiveContract) CalculateThreePartyGameIncentive(ctx contractapi.Tra
 		Theta: 0.2,
 		Lambda: 0.5,
 	}
-	
+	//异常入参处理
+	if docIncentiveInfo.CommentScore < 1 {
+		docIncentiveInfo.CommentScore = 1
+	}
+	if docIncentiveInfo.Need < 1 {
+		docIncentiveInfo.Need = 1
+	}
+	if docIncentiveInfo.TotalUserNum < 1 {
+		docIncentiveInfo.TotalUserNum = 1
+	}
 	// 从docIncentiveInfo获取变量参数
-	Y := float64(docIncentiveInfo.TotalUserNum) // 这里用RefID长度模拟用户规模，实际应该从其他地方获取
+	Y := float64(docIncentiveInfo.TotalUserNum) 
 	need := float64(docIncentiveInfo.Need)
 	commentScore := docIncentiveInfo.CommentScore
 	

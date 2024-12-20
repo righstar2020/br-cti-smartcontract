@@ -147,6 +147,12 @@ func (c *UserPointContract) PurchaseCTI(ctx contractapi.TransactionContextInterf
 	if userPointInfo.UserValue < ctiInfo.Value {
 		return "", fmt.Errorf("insufficient points for purchase")
 	}
+	//检测用户是否已经购买过该情报
+	if _, ok := userPointInfo.UserCTIMap[purchaseCTITxData.CTIID]; ok {
+		return "", fmt.Errorf("user has already purchased this cti")
+	}
+
+
 	userID := purchaseCTITxData.UserID
 	ctiID := purchaseCTITxData.CTIID
 	sellerID := ctiInfo.CreatorUserID
@@ -185,6 +191,11 @@ func (c *UserPointContract) PurchaseModel(ctx contractapi.TransactionContextInte
 	// 检查用户是否有足够的积分
 	if userPointInfo.UserValue < modelInfo.Value {
 		return "", fmt.Errorf("insufficient points for purchase")
+	}
+	
+	//检测用户是否已经购买过该模型
+	if _, ok := userPointInfo.UserModelMap[purchaseModelTxData.ModelID]; ok {
+		return "", fmt.Errorf("user has already purchased this model")
 	}
 
 	userID := purchaseModelTxData.UserID
@@ -417,7 +428,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 	fromID string, toID string, points float64, infoID string, nonce string, doctype string) (string, error) {
 	//保留两位小数
 	points = math.Round(points*100) / 100
-	
+
 	timestamp := time.Now().Format("2006-01-02 15:04")
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
@@ -472,10 +483,7 @@ func (c *UserPointContract) UpdateCTITransactionCount(ctx contractapi.Transactio
 	countBytes, err := ctx.GetStub().GetState(key)
 
 	currentCount := 0
-	if err != nil {
-		return fmt.Errorf("获取交易总数失败: %v", err)
-	}
-	if countBytes != nil {
+	if countBytes != nil && err == nil {
 		currentCount, err = strconv.Atoi(string(countBytes))
 		if err != nil {
 			return fmt.Errorf("解析交易总数失败: %v", err)
@@ -499,10 +507,7 @@ func (c *UserPointContract) UpdateModelTransactionCount(ctx contractapi.Transact
 	countBytes, err := ctx.GetStub().GetState(key)
 
 	currentCount := 0
-	if err != nil {
-		return fmt.Errorf("获取交易总数失败: %v", err)
-	}
-	if countBytes != nil {
+	if countBytes != nil && err == nil {
 		currentCount, err = strconv.Atoi(string(countBytes))
 		if err != nil {
 			return fmt.Errorf("解析交易总数失败: %v", err)
