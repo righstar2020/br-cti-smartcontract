@@ -62,18 +62,18 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	if err != nil {
 		return nil, fmt.Errorf("获取评论信息失败: %v", err)
 	}
-	commentScore := 100.0
+	commentScore := 60.0 //初始评论分数
 	for _, commentInfo := range commentInfos {
 		commentScore += commentInfo.CommentScore
 	}
 	if len(commentInfos) > 0 {
-		commentScore = commentScore / float64(len(commentInfos))
+		commentScore = commentScore / float64(len(commentInfos)+1) //加上初始评论分数
 	}
 	//生成激励ID
 	incentiveID, err := c.GenerateIncentiveID(ctx, refID, doctype, nonce)
 	if err != nil {
 		return nil, fmt.Errorf("生成激励ID失败: %v", err)
-	}
+	} 
 	docIncentiveInfo := typestruct.DocIncentiveInfo{
 		IncentiveID: incentiveID,
 		RefID: refID,
@@ -331,8 +331,20 @@ func (c *IncentiveContract) CalculateThreePartyGameIncentive(ctx contractapi.Tra
 	
 	// 计算综合价值
 	baseValue := docIncentiveInfo.HistoryValue
-	incentiveValue := params.Lambda*baseValue + (1-params.Lambda)*optimalPrice*Q
+	rawValue := params.Lambda*baseValue + (1-params.Lambda)*optimalPrice*Q
 	
+	if baseValue < 1 {
+		baseValue = 1
+	}
+	// 使用 tanh 函数进行规制，让结果在 baseValue 周围波动
+	// 将波动范围限制在 baseValue 的 ±30%
+	fluctuation := 0.3 * baseValue * math.Tanh((rawValue-baseValue)/baseValue)
+	incentiveValue := baseValue + fluctuation
+	
+	// 确保结果为正数
+	if incentiveValue <= 0 {
+		incentiveValue = baseValue
+	}
 	// 返回四舍五入到2位小数的结果
 	return math.Round(incentiveValue*100)/100, nil
 }

@@ -401,6 +401,81 @@ func (c *CTIContract) QueryAllCTIInfoWithPagination(ctx contractapi.TransactionC
 
 	return queryResult, nil
 }
+//按激励机制分页查询
+func (c *CTIContract) QueryCTIInfoByIncentiveMechanismWithPagination(ctx contractapi.TransactionContextInterface,page int, pageSize int,incentiveMechanism int) (*typestruct.CtiQueryResult, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	// 构造查询字符串
+	queryString := fmt.Sprintf(`{"selector":{"doctype":"cti","incentive_mechanism":%d}}`, incentiveMechanism)
+
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("执行查询失败: %v", err)
+	}
+	defer resultsIterator.Close()
+	
+	
+
+	ctiInfos := []typestruct.CtiInfo{}
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			fmt.Printf("获取下一个查询结果失败: %v", err)
+			continue
+		}
+
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
+		var ctiInfo typestruct.CtiInfo
+		err = json.Unmarshal(queryResponse.Value, &ctiInfo)
+		if err != nil {
+			fmt.Printf("解析查询结果失败: %v", err)
+			continue
+		}
+
+		ctiInfos = append(ctiInfos, ctiInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(ctiInfos) >= pageSize {
+			break
+		}
+	}
+
+	// 构造返回结构
+	queryResult := &typestruct.CtiQueryResult{
+		CTIInfos: ctiInfos,
+		Total:    totalCount,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	return queryResult, nil
+}
+
+
 //----------------------------------更新情报信息函数----------------------------------
 //更新情报信息函数(Value)
 func (c *CTIContract) UpdateCTIValue(ctx contractapi.TransactionContextInterface, ctiID string, value float64) error {

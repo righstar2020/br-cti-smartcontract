@@ -229,6 +229,78 @@ func (c *ModelContract) QueryModelsByTypeWithPagination(ctx contractapi.Transact
 		PageSize:   pageSize,
 	}, nil
 }
+//按激励机制分页查询
+func (c *ModelContract) QueryModelsByIncentiveMechanismWithPagination(ctx contractapi.TransactionContextInterface,page int, pageSize int,incentiveMechanism int) (*typestruct.ModelQueryResult, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	// 构造查询字符串
+	queryString := fmt.Sprintf(`{"selector":{"doctype":"model","incentive_mechanism":%d}}`, incentiveMechanism)
+
+	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "") // 极限可获取总数
+	if err != nil {
+		return nil, fmt.Errorf("获取总数失败: %v", err)
+	}
+	totalCount := int(metadata.FetchedRecordsCount)
+
+	// 执行查询
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("执行查询失败: %v", err)
+	}
+	defer resultsIterator.Close()
+	
+	modelInfos := []typestruct.ModelInfo{}
+
+	// 计算偏移量
+	offset := pageSize * (page - 1)
+	count := 0
+
+	// 遍历查询结果
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			fmt.Printf("获取下一个查询结果失败: %v", err)
+			continue
+		}
+
+		// 跳过偏移量之前的结果
+		if count < offset {
+			count++
+			continue
+		}
+
+		var modelInfo typestruct.ModelInfo
+		err = json.Unmarshal(queryResponse.Value, &modelInfo)
+		if err != nil {
+			fmt.Printf("解析查询结果失败: %v", err)
+			continue
+		}
+
+		modelInfos = append(modelInfos, modelInfo)
+		count++
+
+		// 如果达到页面大小，停止
+		if len(modelInfos) >= pageSize {
+			break
+		}
+	}
+
+	// 构造返回结构
+	queryResult := &typestruct.ModelQueryResult{
+		ModelInfos: modelInfos,
+		Total:    totalCount,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	return queryResult, nil
+}
+
 
 
 // QueryModelsByRefCTIId 根据CTIid查询

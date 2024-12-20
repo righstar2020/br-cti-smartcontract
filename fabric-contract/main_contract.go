@@ -153,6 +153,10 @@ func (c *MainContract) QueryAllModelInfoWithPagination(ctx contractapi.Transacti
 func (c *MainContract) QueryModelsByTypeWithPagination(ctx contractapi.TransactionContextInterface, modelType int, page int, pageSize int) (*typestruct.ModelQueryResult, error) {
 	return c.ModelContract.QueryModelsByTypeWithPagination(ctx, modelType, page, pageSize)
 }
+//按激励机制分页查询
+func (c *MainContract) QueryModelsByIncentiveMechanismWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int, incentiveMechanism int) (*typestruct.ModelQueryResult, error) {
+	return c.ModelContract.QueryModelsByIncentiveMechanismWithPagination(ctx, page, pageSize, incentiveMechanism)
+}
 
 // 查询用户所上传的模型信息
 func (c *MainContract) QueryModelsByUserID(ctx contractapi.TransactionContextInterface, userId string) ([]typestruct.ModelInfo, error) {
@@ -173,7 +177,10 @@ func (c *MainContract) QueryAllCTIInfoWithPagination(ctx contractapi.Transaction
 func (c *MainContract) QueryCTIInfoByTypeWithPagination(ctx contractapi.TransactionContextInterface, ctiType int, page int, pageSize int) (*typestruct.CtiQueryResult, error) {
 	return c.CTIContract.QueryCTIInfoByTypeWithPagination(ctx, ctiType, page, pageSize)
 }
-
+//按激励机制分页查询
+func (c *MainContract) QueryCTIInfoByIncentiveMechanismWithPagination(ctx contractapi.TransactionContextInterface, page int, pageSize int, incentiveMechanism int) (*typestruct.CtiQueryResult, error) {
+	return c.CTIContract.QueryCTIInfoByIncentiveMechanismWithPagination(ctx, page, pageSize, incentiveMechanism)
+}
 // 查询最新的num条情报精简信息
 func (c *MainContract) QueryLatestCTISummaryInfo(ctx contractapi.TransactionContextInterface, limit int) ([]typestruct.CtiSummaryInfo, error) {
 	return c.DataContract.QueryLatestCTISummaryInfo(ctx, limit)
