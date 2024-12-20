@@ -48,8 +48,8 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 	}
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
-		UserValue:  10000000000,          // 管理员用户的积分值为 10000000000
-		UserLevel: 9, // 管理员用户的等级为 9(专家用户)
+		UserValue:  10000000000,              // 管理员用户的积分值为 10000000000
+		UserLevel:  9,                        // 管理员用户的等级为 9(专家用户)
 		UserCTIMap: make(map[string]float64), // 空的CTI映射
 		CTIBuyMap:  make(map[string]float64), // 空的CTI购买映射
 		CTISaleMap: make(map[string]float64), // 空的CTI销售映射
@@ -184,7 +184,7 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	return c.DataContract.GetDataStatistics(ctx)
 }
 
-//--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
+// --------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
 // 注册情报信息
 func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -214,6 +214,7 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 	}
 	return ctiInfo, nil
 }
+
 // 注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.ModelInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -243,8 +244,6 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 	}
 	return modelInfo, nil
 }
-
-
 
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string, error) {
@@ -352,7 +351,7 @@ func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface
 	if len(warnings) > 0 {
 		fmt.Printf("交易成功完成，但有以下警告：%v\n", warnings)
 	}
-	return transactionID,nil
+	return transactionID, nil
 }
 
 // 验证交易随机数和签名
@@ -662,7 +661,7 @@ func (c *MainContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionConte
 }
 
 // 查询文档激励信息
-func (c *MainContract) QueryDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]*typestruct.DocIncentiveInfo, error) {
+func (c *MainContract) QueryDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]typestruct.DocIncentiveInfo, error) {
 	return c.IncentiveContract.QueryAllDocIncentiveInfo(ctx, refID, doctype)
 }
 

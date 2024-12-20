@@ -8,23 +8,23 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
-	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	userContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-contract"
 	userPointContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/user-point-contract"
 )
 
 // 评论类型
 const (
-	COMMENT_TYPE_CTI = 1 // 情报评论
+	COMMENT_TYPE_CTI   = 1 // 情报评论
 	COMMENT_TYPE_MODEL = 2 // 模型评论
 )
 
 // 评论状态
 const (
-	COMMENT_STATUS_PENDING = 1 // 待审核
+	COMMENT_STATUS_PENDING  = 1 // 待审核
 	COMMENT_STATUS_APPROVED = 2 // 已审核
 	COMMENT_STATUS_REJECTED = 3 // 已拒绝
 )
@@ -54,10 +54,26 @@ func (c *CommentContract) RegisterComment(ctx contractapi.TransactionContextInte
 	// 生成评论 ID: 评论类型(1位) + 时间戳(12位,年月日时分) + 随机数(6位)
 	commentID := fmt.Sprintf("%s%s%s", commentTxData.CommentDocType, timestamp, randomNum)
 
+	userPointInfo, err := c.QueryUserPointInfo(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("获取用户积分信息失败: %v", err)
+	}
+
+	// 根据用户积分设置用户等级
+	var userLevel int
+	if userPointInfo.UserValue < 1000 {
+		userLevel = 1 // 普通用户
+	} else if userPointInfo.UserValue > 20000 {
+		userLevel = 3 // 专家用户
+	} else {
+		userLevel = 2 // 高级用户
+	}
+
 	// 创建新的评论信息对象
 	newComment := typestruct.CommentInfo{
 		CommentID:      commentID,
 		UserID:         userID,
+		UserLevel:      userLevel,
 		CommentDocType: commentTxData.CommentDocType,
 		CommentRefID:   commentTxData.CommentRefID,
 		CommentScore:   commentTxData.CommentScore,
@@ -83,7 +99,7 @@ func (c *CommentContract) RegisterComment(ctx contractapi.TransactionContextInte
 }
 
 // ApproveComment 审核评论
-func (c *CommentContract) ApproveComment(ctx contractapi.TransactionContextInterface,userID string, commentID string, status int) error {
+func (c *CommentContract) ApproveComment(ctx contractapi.TransactionContextInterface, userID string, commentID string, status int) error {
 	// 获取用户积分信息
 	userPointInfo, err := c.QueryUserPointInfo(ctx, userID)
 	if err != nil {
@@ -149,7 +165,8 @@ func (c *CommentContract) QueryComment(ctx contractapi.TransactionContextInterfa
 
 	return &comment, nil
 }
-//查询指定RefID的所有评论
+
+// 查询指定RefID的所有评论
 func (c *CommentContract) QueryAllCommentsByRefID(ctx contractapi.TransactionContextInterface, refID string) ([]typestruct.CommentInfo, error) {
 	queryString := fmt.Sprintf(`{"selector":{"comment_ref_id":"%s","doctype":"comment"}}`, refID)
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
@@ -175,6 +192,7 @@ func (c *CommentContract) QueryAllCommentsByRefID(ctx contractapi.TransactionCon
 	}
 	return comments, nil
 }
+
 // QueryCommentsByRefIDWithPagination 分页查询特定RefID的评论
 func (c *CommentContract) QueryCommentsByRefIDWithPagination(ctx contractapi.TransactionContextInterface, refID string, page int, pageSize int) (*typestruct.CommentQueryResult, error) {
 	// 构建查询字符串
@@ -240,4 +258,3 @@ func (c *CommentContract) QueryCommentsByRefIDWithPagination(ctx contractapi.Tra
 
 	return queryResult, nil
 }
-

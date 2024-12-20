@@ -1,6 +1,5 @@
 package typestruct
 
-
 // 用户结构
 type UserInfo struct {
 	UserID        string `json:"user_id"`         //用户ID(公钥sha256)
@@ -12,13 +11,13 @@ type UserInfo struct {
 
 type UserPointInfo struct {
 	UserValue  float64            `json:"user_value"`   //用户积分
-	UserLevel int `json:"user_level"` // 用户等级(历史最高积分)
+	UserLevel  int                `json:"user_level"`   // 用户等级(历史最高积分)
 	UserCTIMap map[string]float64 `json:"user_cti_map"` //用户拥有的情报map
 	CTIBuyMap  map[string]float64 `json:"cti_buy_map"`  //用户购买的情报map
-	CTISaleMap  map[string]float64 `json:"cti_sale_map"`  //用户销售的情报map
+	CTISaleMap map[string]float64 `json:"cti_sale_map"` //用户销售的情报map
 
 	UserModelMap map[string]float64 `json:"user_model_map"` //用户拥有的模型map
-	ModelBuyMap map[string]float64 `json:"model_buy_map"` //用户购买的模型map
+	ModelBuyMap  map[string]float64 `json:"model_buy_map"`  //用户购买的模型map
 	ModelSaleMap map[string]float64 `json:"model_sale_map"` //用户销售的模型map
 }
 
@@ -48,8 +47,8 @@ type CtiInfo struct {
 	DataSourceIPFSHash string   `json:"data_source_ipfs_hash"` // 数据源IPFS地址
 	Need               int      `json:"need"`                  // 情报需求量(销售数量)
 	IncentiveMechanism int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	Value              float64      `json:"value"`                 // 情报价值（积分）
-	CompreValue        float64      `json:"compre_value"`          // 综合价值（积分激励算法定价）
+	Value              float64  `json:"value"`                 // 情报价值（积分）
+	CompreValue        float64  `json:"compre_value"`          // 综合价值（积分激励算法定价）
 	CreateTime         string   `json:"create_time"`           // 情报创建时间（由合约生成）
 	Doctype            string   `json:"doctype"`               // 文档类型
 }
@@ -77,7 +76,7 @@ type DataSatisticsInfo struct {
 	CTITypeDataNum     map[string]int `json:"cti_type_data_num"`     // 情报分类型数据数量
 	ModelTypeDataNum   map[string]int `json:"model_type_data_num"`   // 模型分类型数据数量
 	IOCsDataNum        map[string]int `json:"iocs_data_num"`         // IOCs分类型数据数量
-	
+
 }
 
 type CtiSummaryInfo struct {
@@ -108,7 +107,7 @@ type ModelInfo struct {
 	ModelDataIPFSHash   string   `json:"model_data_ipfs_hash"`  // 模型训练数据IPFS地址
 	ModelIPFSHash       string   `json:"model_ipfs_hash"`       // 模型IPFS地址
 	IncentiveMechanism  int      `json:"incentive_mechanism"`   // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	Value               float64      `json:"value"`                 // 模型价值
+	Value               float64  `json:"value"`                 // 模型价值
 	Need                int      `json:"need"`                  // 模型需求量
 	RefCTIId            string   `json:"ref_cti_id"`            // 关联情报ID(使用哪个情报训练的模型)
 	CreateTime          string   `json:"create_time"`           // 模型创建时间（由合约生成）
@@ -152,16 +151,16 @@ type GlobalIOCsInfo struct {
 
 // SystemOverviewInfo 系统概览信息
 type SystemOverviewInfo struct {
-	BlockHeight       int `json:"block_height"`
-	TotalTransactions int `json:"total_transactions"`
+	BlockHeight       int     `json:"block_height"`
+	TotalTransactions int     `json:"total_transactions"`
 	CTIValue          float64 `json:"cti_value"`
-	CTICount          int `json:"cti_count"`
-	CTITransactions   int `json:"cti_transactions"`
+	CTICount          int     `json:"cti_count"`
+	CTITransactions   int     `json:"cti_transactions"`
 	ModelValue        float64 `json:"model_value"`
-	ModelCount        int `json:"model_count"`
-	ModelTransactions int `json:"model_transactions"`
-	IOCsCount         int `json:"iocs_count"`
-	AccountCount      int `json:"account_count"`
+	ModelCount        int     `json:"model_count"`
+	ModelTransactions int     `json:"model_transactions"`
+	IOCsCount         int     `json:"iocs_count"`
+	AccountCount      int     `json:"account_count"`
 }
 
 // UpchainTrendInfo 上链趋势信息
@@ -170,26 +169,26 @@ type UpchainTrendInfo struct {
 	ModelUpchain map[string]int `json:"model_upchain"` // 模型上链趋势
 }
 
-//----------------------------------评论----------------------------------
-//评论数据结构
+// ----------------------------------评论----------------------------------
+// 评论数据结构
 type CommentInfo struct {
-	CommentID string `json:"comment_id"` // 评论ID
-	UserID string `json:"user_id"` // 用户ID
-	UserLevel int `json:"user_level"` // 用户等级(1:普通用户value<1000、2:高级用户value>1000、3:专家用户value>20000)
-	CommentDocType string `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
-	CommentRefID string `json:"comment_ref_id"` // 评论关联ID(情报ID、模型ID)
-	CommentScore float64 `json:"comment_score"` // 评论分数
-	CommentStatus int `json:"comment_status"` // 评论状态(1:待审核、2:已审核、3:已拒绝)
-	CommentContent string `json:"comment_content"` // 评论内容
-	CreateTime string `json:"create_time"` // 创建时间
-	Doctype string `json:"doctype"` // 文档类型(cti、model)
+	CommentID      string  `json:"comment_id"`       // 评论ID
+	UserID         string  `json:"user_id"`          // 用户ID
+	UserLevel      int     `json:"user_level"`       // 用户等级(1:普通用户value<1000、2:高级用户value>1000、3:专家用户value>20000)
+	CommentDocType string  `json:"comment_doc_type"` // 评论文档类型(cti:情报、model:模型)
+	CommentRefID   string  `json:"comment_ref_id"`   // 评论关联ID(情报ID、模型ID)
+	CommentScore   float64 `json:"comment_score"`    // 评论分数
+	CommentStatus  int     `json:"comment_status"`   // 评论状态(1:待审核、2:已审核、3:已拒绝)
+	CommentContent string  `json:"comment_content"`  // 评论内容
+	CreateTime     string  `json:"create_time"`      // 创建时间
+	Doctype        string  `json:"doctype"`          // 文档类型(cti、model)
 }
 
-//评论审核数据结构
+// 评论审核数据结构
 type ApproveCommentInfo struct {
-	UserID string `json:"user_id"` // 审核用户ID
-	CommentID string `json:"comment_id"` // 评论ID
-	Status int `json:"status"` // 审核状态(1:通过、2:拒绝)
+	UserID     string `json:"user_id"`     // 审核用户ID
+	CommentID  string `json:"comment_id"`  // 评论ID
+	Status     int    `json:"status"`      // 审核状态(1:通过、2:拒绝)
 	CreateTime string `json:"create_time"` // 审核时间
 }
 
@@ -200,17 +199,17 @@ type CommentQueryResult struct {
 	Page         int           `json:"page"`
 	PageSize     int           `json:"page_size"`
 }
-//----------------------------------激励机制信息----------------------------------
+
+// ----------------------------------激励机制信息----------------------------------
 // 文档激励信息
 type DocIncentiveInfo struct {
-	IncentiveID string `json:"incentive_id"` // 激励ID
-	RefID string `json:"ref_id"` // 关联ID
-	Doctype string `json:"doctype"` // 文档类型(cti、model)
-	HistoryValue float64 `json:"history_value"` // 历史积分值
-	IncentiveMechanism int `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
-	IncentiveValue float64 `json:"incentive_value"` // 激励值(当前积分)
-	CommentScore float64 `json:"comment_score"` // 评论分数
-	Need int `json:"need"` // 需求量
-	CreateTime string `json:"create_time"` // 创建时间
+	IncentiveID        string  `json:"incentive_id"`        // 激励ID
+	RefID              string  `json:"refen_id"`            // 关联ID
+	Doctype            string  `json:"doctype"`             // 文档类型(cti、model)
+	HistoryValue       float64 `json:"history_value"`       // 历史积分值
+	IncentiveMechanism int     `json:"incentive_mechanism"` // 激励机制(1:积分激励、2:三方博弈、3:演化博弈)
+	IncentiveValue     float64 `json:"incentive_value"`     // 激励值(当前积分)
+	CommentScore       float64 `json:"comment_score"`       // 评论分数
+	Need               int     `json:"need"`                // 需求量
+	CreateTime         string  `json:"create_time"`         // 创建时间
 }
-

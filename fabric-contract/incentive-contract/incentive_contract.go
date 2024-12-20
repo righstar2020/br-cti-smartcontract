@@ -1,22 +1,23 @@
 package incentive_contract
 
 import (
-	"fmt"
-	"time"
-	"math"
-	"encoding/json"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"math"
+	"time"
+
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	commentContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/comment-contract"
 	ctiContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/cti-contract"
 	modelContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/model-contract"
-	commentContract "github.com/righstar2020/br-cti-smartcontract/fabric-contract/comment-contract"
+	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
 )
 
 // 激励机制类型
 const (
-	INCENTIVE_TYPE_POINT = 1 // 积分激励
-	INCENTIVE_TYPE_GAME = 2  // 三方博弈
+	INCENTIVE_TYPE_POINT     = 1 // 积分激励
+	INCENTIVE_TYPE_GAME      = 2 // 三方博弈
 	INCENTIVE_TYPE_EVOLUTION = 3 // 演化博弈
 )
 
@@ -27,7 +28,7 @@ type IncentiveContract struct {
 	commentContract.CommentContract
 }
 
-//注册文档激励信息
+// 注册文档激励信息
 func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string, nonce string) (*typestruct.DocIncentiveInfo, error) {
 	var ctiInfo *typestruct.CtiInfo
 	var modelInfo *typestruct.ModelInfo
@@ -68,14 +69,14 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		return nil, fmt.Errorf("生成激励ID失败: %v", err)
 	}
 	docIncentiveInfo := typestruct.DocIncentiveInfo{
-		IncentiveID: incentiveID,
-		RefID: refID,
-		Doctype: doctype,
-		HistoryValue: historyValue,
+		IncentiveID:        incentiveID,
+		RefID:              refID,
+		Doctype:            doctype,
+		HistoryValue:       historyValue,
 		IncentiveMechanism: incentiveMechanism,
-		CommentScore: commentScore,
-		Need: need,
-		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
+		CommentScore:       commentScore,
+		Need:               need,
+		CreateTime:         time.Now().Format("2006-01-02 15:04:05"),
 	}
 	//根据激励机制计算激励值
 	if incentiveMechanism == INCENTIVE_TYPE_POINT {
@@ -121,15 +122,15 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	return &docIncentiveInfo, nil
 }
 
-//查询文档激励信息
-func (c *IncentiveContract) QueryAllDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]*typestruct.DocIncentiveInfo, error) {
-	query := fmt.Sprintf(`{"selector":{"ref_id":"%s","doctype":"%s"}}`, refID, doctype)
+// 查询文档激励信息
+func (c *IncentiveContract) QueryAllDocIncentiveInfo(ctx contractapi.TransactionContextInterface, refID string, doctype string) ([]typestruct.DocIncentiveInfo, error) {
+	query := fmt.Sprintf(`{"selector":{"refen_id":"%s","doctype":"%s"}}`, refID, doctype)
 	resultsIterator, err := ctx.GetStub().GetQueryResult(query)
 	if err != nil {
 		return nil, fmt.Errorf("查询文档激励信息失败: %v", err)
 	}
 	defer resultsIterator.Close()
-	docIncentiveInfos := []*typestruct.DocIncentiveInfo{}
+	docIncentiveInfos := []typestruct.DocIncentiveInfo{}
 	// 遍历查询结果
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
@@ -144,13 +145,14 @@ func (c *IncentiveContract) QueryAllDocIncentiveInfo(ctx contractapi.Transaction
 			fmt.Printf("反序列化文档激励信息失败: %v", err)
 		}
 
-		docIncentiveInfos = append(docIncentiveInfos, &docIncentiveInfo)
+		docIncentiveInfos = append(docIncentiveInfos, docIncentiveInfo)
 	}
 
 	return docIncentiveInfos, nil
 }
-//生成ID
-func (c *IncentiveContract) GenerateIncentiveID(ctx contractapi.TransactionContextInterface, refID string, doctype string,nonce string) (string, error) {
+
+// 生成ID
+func (c *IncentiveContract) GenerateIncentiveID(ctx contractapi.TransactionContextInterface, refID string, doctype string, nonce string) (string, error) {
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
 	nonceNum := 100000
@@ -166,10 +168,8 @@ func (c *IncentiveContract) GenerateIncentiveID(ctx contractapi.TransactionConte
 	return incentiveID, nil
 }
 
-
-
-//----------------------------------不同激励机制计算积分----------------------------------
-//--------------------------------------积分激励--------------------------------------
+// ----------------------------------不同激励机制计算积分----------------------------------
+// --------------------------------------积分激励--------------------------------------
 func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	alpha := 0.2
 	beta := 0.3
@@ -177,19 +177,18 @@ func (c *IncentiveContract) CalculateCommonPointIncentive(ctx contractapi.Transa
 	//综合历史value、评论分数、需求量
 	historyValue := float64(docIncentiveInfo.HistoryValue)
 	//取log
-	logCommentScore := math.Log(float64(docIncentiveInfo.CommentScore))*10
-	logNeed := math.Log(float64(docIncentiveInfo.Need))*10
-	incentiveValue := alpha * historyValue + beta * logCommentScore + gamma * logNeed
-	return math.Round(incentiveValue*100)/100, nil
+	logCommentScore := math.Log(float64(docIncentiveInfo.CommentScore)) * 10
+	logNeed := math.Log(float64(docIncentiveInfo.Need)) * 10
+	incentiveValue := alpha*historyValue + beta*logCommentScore + gamma*logNeed
+	return math.Round(incentiveValue*100) / 100, nil
 }
 
-//--------------------------------------三方博弈--------------------------------------
+// --------------------------------------三方博弈--------------------------------------
 func (c *IncentiveContract) CalculateThreePartyGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	return docIncentiveInfo.IncentiveValue, nil
 }
 
-//--------------------------------------演化博弈--------------------------------------	
+// --------------------------------------演化博弈--------------------------------------
 func (c *IncentiveContract) CalculateEvolutionGameIncentive(ctx contractapi.TransactionContextInterface, docIncentiveInfo *typestruct.DocIncentiveInfo) (float64, error) {
 	return docIncentiveInfo.IncentiveValue, nil
 }
-
