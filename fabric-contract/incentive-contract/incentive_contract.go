@@ -91,26 +91,31 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		if err != nil {
 			return nil, fmt.Errorf("计算激励值失败: %v", err)
 		}
+		fmt.Println("计算激励值成功: ", incentiveValue)
 		docIncentiveInfo.IncentiveValue = incentiveValue
 	} else if incentiveMechanism == INCENTIVE_TYPE_GAME {
 		incentiveValue, err := c.CalculateThreePartyGameIncentive(ctx, &docIncentiveInfo)
 		if err != nil {
 			return nil, fmt.Errorf("计算激励值失败: %v", err)
 		}
+		fmt.Println("计算激励值成功: ", incentiveValue)
 		docIncentiveInfo.IncentiveValue = incentiveValue
 	} else if incentiveMechanism == INCENTIVE_TYPE_EVOLUTION {
 		incentiveValue, err := c.CalculateEvolutionGameIncentive(ctx, &docIncentiveInfo)
 		if err != nil {
 			return nil, fmt.Errorf("计算激励值失败: %v", err)
 		}
+		fmt.Println("计算激励值成功: ", incentiveValue)
 		docIncentiveInfo.IncentiveValue = incentiveValue
 	} else {
 		incentiveValue, err := c.CalculateCommonPointIncentive(ctx, &docIncentiveInfo)
 		if err != nil {
 			return nil, fmt.Errorf("计算激励值失败: %v", err)
 		}
+		fmt.Println("计算激励值成功: ", incentiveValue)
 		docIncentiveInfo.IncentiveValue = incentiveValue
 	}
+	fmt.Println("docIncentiveInfo: ", docIncentiveInfo)
 	//将激励信息写入区块链
 	docIncentiveInfoBytes, err := json.Marshal(docIncentiveInfo)
 	if err != nil {
