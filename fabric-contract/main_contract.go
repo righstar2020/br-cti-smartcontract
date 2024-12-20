@@ -48,8 +48,8 @@ func (c *MainContract) InitLedger(ctx contractapi.TransactionContextInterface) (
 	}
 	// // 初始化 UserPointMap
 	newUserPointInfo := typestruct.UserPointInfo{
-		UserValue:  10000000000,          // 管理员用户的积分值为 10000000000
-		UserLevel: 9, // 管理员用户的等级为 9(专家用户)
+		UserValue:  10000000000,              // 管理员用户的积分值为 10000000000
+		UserLevel:  9,                        // 管理员用户的等级为 9(专家用户)
 		UserCTIMap: make(map[string]float64), // 空的CTI映射
 		CTIBuyMap:  make(map[string]float64), // 空的CTI购买映射
 		CTISaleMap: make(map[string]float64), // 空的CTI销售映射
@@ -184,7 +184,7 @@ func (c *MainContract) GetDataStatistics(ctx contractapi.TransactionContextInter
 	return c.DataContract.GetDataStatistics(ctx)
 }
 
-//--------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
+// --------------------------------------------------------------------以下需要签名验证--------------------------------------------------------------------
 // 注册情报信息
 func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.CtiInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -214,6 +214,7 @@ func (c *MainContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfa
 	}
 	return ctiInfo, nil
 }
+
 // 注册模型信息
 func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInterface, txMsgData string) (*typestruct.ModelInfo, error) {
 	//验证交易签名(返回交易数据和验证结果)
@@ -243,8 +244,6 @@ func (c *MainContract) RegisterModelInfo(ctx contractapi.TransactionContextInter
 	}
 	return modelInfo, nil
 }
-
-
 
 // 用户购买情报
 func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, txMsgData string) (string, error) {
@@ -278,12 +277,21 @@ func (c *MainContract) PurchaseCTI(ctx contractapi.TransactionContextInterface, 
 
 	// 更新激励机制
 	go func() {
+		totalUserNum := 1
+		userAccountList, err := c.UserContract.QueryUserAccountList(ctx)
+		if err == nil {
+			totalUserNum = len(userAccountList)
+		}
+
 		incentiveInfo := typestruct.DocIncentiveInfo{
-			RefID: purchaseCTITxData.CTIID,
+			RefID:            purchaseCTITxData.CTIID,
 			IncentiveDoctype: "cti",
 		}
-		if _, err := c.RegisterIncentiveInfo(ctx, incentiveInfo, TxMsgData.Nonce); err != nil {
-			errCh <- err
+
+		_, err = c.IncentiveContract.RegisterDocIncentiveInfo(ctx, incentiveInfo.RefID,
+			incentiveInfo.IncentiveDoctype, TxMsgData.Nonce, totalUserNum)
+		if err != nil {
+			errCh <- fmt.Errorf("failed to register incentive info: %v", err)
 			return
 		}
 		errCh <- nil
@@ -337,12 +345,21 @@ func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface
 
 	// 更新激励机制
 	go func() {
+		totalUserNum := 1
+		userAccountList, err := c.UserContract.QueryUserAccountList(ctx)
+		if err == nil {
+			totalUserNum = len(userAccountList)
+		}
+
 		incentiveInfo := typestruct.DocIncentiveInfo{
-			RefID: purchaseModelTxData.ModelID,
+			RefID:            purchaseModelTxData.ModelID,
 			IncentiveDoctype: "model",
 		}
-		if _, err := c.RegisterIncentiveInfo(ctx, incentiveInfo, TxMsgData.Nonce); err != nil {
-			errCh <- err
+
+		_, err = c.IncentiveContract.RegisterDocIncentiveInfo(ctx, incentiveInfo.RefID,
+			incentiveInfo.IncentiveDoctype, TxMsgData.Nonce, totalUserNum)
+		if err != nil {
+			errCh <- fmt.Errorf("failed to register incentive info: %v", err)
 			return
 		}
 		errCh <- nil
@@ -360,7 +377,7 @@ func (c *MainContract) PurchaseModel(ctx contractapi.TransactionContextInterface
 	if len(warnings) > 0 {
 		fmt.Printf("交易成功完成，但有以下警告：%v\n", warnings)
 	}
-	return transactionID,nil
+	return transactionID, nil
 }
 
 // 验证交易随机数和签名
@@ -678,13 +695,14 @@ func (c *MainContract) RegisterDocIncentiveInfo(ctx contractapi.TransactionConte
 		return nil, fmt.Errorf("failed to unmarshal msg data: %v", err)
 	}
 	IncentiveInfo := typestruct.DocIncentiveInfo{
-		RefID: incentiveTxData.RefID,
+		RefID:            incentiveTxData.RefID,
 		IncentiveDoctype: incentiveTxData.IncentiveDoctype,
 	}
 	return c.RegisterIncentiveInfo(ctx, IncentiveInfo, TxMsgData.Nonce)
-	
+
 }
-//注册激励信息
+
+// 注册激励信息
 func (c *MainContract) RegisterIncentiveInfo(ctx contractapi.TransactionContextInterface, IncentiveInfo typestruct.DocIncentiveInfo, nonce string) (*typestruct.DocIncentiveInfo, error) {
 	totalUserNum := 1
 	userAccountList, err := c.UserContract.QueryUserAccountList(ctx)

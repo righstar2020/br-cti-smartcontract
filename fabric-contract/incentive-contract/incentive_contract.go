@@ -37,11 +37,17 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	incentiveMechanism := 1
 	if doctype == "cti" {
 		ctiInfo, err = c.CTIContract.QueryCTIInfo(ctx, refID)
+		if err != nil {
+			return nil, fmt.Errorf("获取CTI信息失败: %v", err)
+		}
 		historyValue = ctiInfo.Value
 		need = ctiInfo.Need
 		incentiveMechanism = ctiInfo.IncentiveMechanism
 	} else if doctype == "model" {
 		modelInfo, err = c.ModelContract.QueryModelInfo(ctx, refID)
+		if err != nil {
+			return nil, fmt.Errorf("获取模型信息失败: %v", err)
+		}
 		historyValue = modelInfo.Value
 		need = modelInfo.Need
 		incentiveMechanism = modelInfo.IncentiveMechanism
