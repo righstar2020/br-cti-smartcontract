@@ -85,7 +85,7 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		TotalUserNum: totalUserNum,
 		IncentiveValue: 10,//初始激励值
 		Doctype: "incentive",
-		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
+		CreateTime: time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),
 	}
 	//异常参数处理
 	if docIncentiveInfo.HistoryValue < 1 {

@@ -79,41 +79,7 @@ type PurchaseModelTxData struct {
 	ModelID string `json:"model_id"` // 模型ID
 	UserID string `json:"user_id"` // 用户ID
 }
-// 模型算法映射表
-var ModelAlgorithms = map[string][]string{
-	//分类模型
-    "classification": {
-        "SVM",                  // 支持向量机
-        "RandomForest",         // 随机森林
-        "DecisionTree",         // 决策树
-        "GaussianNB",          // 高斯朴素贝叶斯
-        "KNN",                  // K近邻分类器
-        "LogisticRegression",   // 逻辑回归
-    },
-	//回归模型
-    "regression": {
-        "LinearRegression",     // 线性回归
-        "Ridge",               // 岭回归
-        "Lasso",               // Lasso回归
-        "SVR",                 // 支持向量回归
-        "RandomForestRegressor", // 随机森林回归
-    },
-	//聚类模型
-    "clustering": {
-        "KMeans",              // K均值聚类
-        "DBSCAN",              // 密度聚类
-        "AgglomerativeClustering", // 层次聚类
-        "GaussianMixture",     // 高斯混合模型
-        "MeanShift",           // 均值漂移
-    },
-	//NLP模型
-    "nlp": {
-        "TfidfVectorizer",     // TF-IDF特征提取
-        "CountVectorizer",     // 词频特征提取
-        "MultinomialNB",       // 多项式朴素贝叶斯
-        "BernoulliNB",         // 伯努利朴素贝叶斯
-    },
-}
+
 //----------------------------------评论----------------------------------
 //评论交易数据结构
 type CommentTxData struct {
