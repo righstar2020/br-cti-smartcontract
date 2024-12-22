@@ -429,7 +429,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 	//保留两位小数
 	points = math.Round(points*100) / 100
 
-	timestamp := time.Now().Format("2006-01-02 15:04")
+	timestamp := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
 	nonceNum := 100000
