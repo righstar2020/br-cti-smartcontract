@@ -182,7 +182,7 @@ func (c *CommentContract) QueryAllCommentsByRefID(ctx contractapi.TransactionCon
 // QueryCommentsByRefIDWithPagination 分页查询特定RefID的评论
 func (c *CommentContract) QueryCommentsByRefIDWithPagination(ctx contractapi.TransactionContextInterface, refID string, page int, pageSize int) (*typestruct.CommentQueryResult, error) {
 	// 构建查询字符串,按create_time正序排序
-	queryString := fmt.Sprintf(`{"selector":{"comment_ref_id":"%s","doctype":"comment"},"sort":[{"create_time":"asc"}]}`, refID)
+	queryString := fmt.Sprintf(`{"selector":{"comment_ref_id":"%s","doctype":"comment"}}`, refID)
 
 	// 获取总数
 	_, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(999999999), "")
