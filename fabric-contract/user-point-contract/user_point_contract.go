@@ -428,8 +428,12 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 	fromID string, toID string, points float64, infoID string, nonce string, doctype string) (string, error) {
 	//保留两位小数
 	points = math.Round(points*100) / 100
-
-	timestamp := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
+	block_time, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return "", fmt.Errorf("获取交易时间戳失败: %v", err)
+	}
+	currentTime := time.Unix(int64(block_time.GetSeconds()), 0)
+	timestamp := currentTime.In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
 	// 从base64编码的nonce中提取随机数
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
 	nonceNum := 100000
@@ -439,7 +443,7 @@ func (c *UserPointContract) CreateBilateralTransactions(ctx contractapi.Transact
 		nonceNum = int(nonceBytes[0])*10000 + int(nonceBytes[1])*100 + int(nonceBytes[2])
 		nonceNum = nonceNum % 1000000 // 确保是6位数
 	}
-	timesID := time.Now().Format("0601021504")
+	timesID := currentTime.Format("0601021504")
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	// 生成交易ID: 时间戳(12位,年月日时分) + 随机数(6位)
 	transaction_id := fmt.Sprintf("%s%s", timesID, randomNum)

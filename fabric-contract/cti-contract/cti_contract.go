@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"encoding/base64"
-	"time"
 	"math"
+	"time"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/msgstruct"
 	"github.com/righstar2020/br-cti-smartcontract/fabric-contract/typestruct"
@@ -72,7 +72,13 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 	if ctiTxData.CTIType != 0 {
 		ctiType = ctiTxData.CTIType
 	}
-	timestamp := time.Now().Format("0601021504")
+	block_time, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return nil, fmt.Errorf("获取交易时间戳失败: %v", err)
+	}
+	currentTime := time.Unix(int64(block_time.GetSeconds()), 0)
+	//只需要精确到分钟
+	timestamp := currentTime.Format("0601021504")
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	// 生成CTI ID: 类型(2位) + 时间戳(12位,年月日时分) + 随机数(6位)
 	ctiID := fmt.Sprintf("%02d%s%s", ctiType, timestamp, randomNum)
@@ -98,7 +104,7 @@ func (c *CTIContract) RegisterCTIInfo(ctx contractapi.TransactionContextInterfac
 		Value:          ctiTxData.Value,                                                            // 情报价值（积分）
 		IncentiveMechanism: ctiTxData.IncentiveMechanism,                                           // 激励机制
 		CompreValue:    0,                                                                          // 综合价值（积分激励算法定价）
-		CreateTime:     time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
+		CreateTime:     currentTime.In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"), // 情报创建时间
 		Doctype:        "cti",                                                                      // 文档类型
 	}
 	//保留两位小数

@@ -74,6 +74,11 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 	if err != nil {
 		return nil, fmt.Errorf("生成激励ID失败: %v", err)
 	} 
+	block_time, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return nil, fmt.Errorf("获取交易时间戳失败: %v", err)
+	}
+	currentTime := time.Unix(int64(block_time.GetSeconds()), 0)
 	docIncentiveInfo := typestruct.DocIncentiveInfo{
 		IncentiveID: incentiveID,
 		RefID: refID,
@@ -85,7 +90,7 @@ func (c *IncentiveContract) RegisterDocIncentiveInfo(ctx contractapi.Transaction
 		TotalUserNum: totalUserNum,
 		IncentiveValue: 10,//初始激励值
 		Doctype: "incentive",
-		CreateTime: time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),
+		CreateTime: currentTime.In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05"),
 	}
 	//异常参数处理
 	if docIncentiveInfo.HistoryValue < 1 {
@@ -164,7 +169,13 @@ func (c *IncentiveContract) GenerateIncentiveID(ctx contractapi.TransactionConte
 		nonceNum = int(nonceBytes[0])*10000 + int(nonceBytes[1])*100 + int(nonceBytes[2])
 		nonceNum = nonceNum % 1000000 // 确保是6位数
 	}
-	timestamp := time.Now().Format("0601021504")
+	block_time, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return "", fmt.Errorf("获取交易时间戳失败: %v", err)
+	}
+	currentTime := time.Unix(int64(block_time.GetSeconds()), 0)
+	//只需要精确到分钟
+	timestamp := currentTime.Format("0601021504")
 	randomNum := fmt.Sprintf("%06d", nonceNum)
 	incentiveID := fmt.Sprintf("%s_incentive_%s%s",doctype,timestamp, randomNum)
 	return incentiveID, nil
