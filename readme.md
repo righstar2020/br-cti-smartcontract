@@ -157,3 +157,29 @@ peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"fu
 //注册用户信息
 peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"function":"RegisterUserInfo","Args":["用户信息JSON"]}'
 ```
+
+10.链码升级
+```shell
+//打包
+peer lifecycle chaincode package main_contract_new.tar.gz --path ../br-cti-smartcontract/fabric-contract  --lang golang --label main_contract_2.0
+
+
+peer lifecycle chaincode install main_contract_new.tar.gz //安装需要切换节点证书
+
+peer lifecycle chaincode queryinstalled
+
+//安装后新的链码id
+export NEW_CC_PACKAGE_ID=main_contract_2.0:e95164645a2d13595c6d0b7f2f20d191dd9af1ac7923c3c5ac081576ba52e812
+
+//审批也需要切换节点证书
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name main_contract --version 2.0 --package-id $NEW_CC_PACKAGE_ID --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name  main_contract --version 2.0 --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
+
+
+docker ps -a 查看是否更新
+
+每次更新sequence需要+1
+
+
+```
