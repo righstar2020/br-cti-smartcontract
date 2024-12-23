@@ -163,6 +163,9 @@ peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n main_contract -c '{"fu
 //打包
 peer lifecycle chaincode package main_contract_new.tar.gz --path ../br-cti-smartcontract/fabric-contract  --lang golang --label main_contract_2.0
 
+//切换节点证书
+source ./peer_org1.sh
+source ./peer_org2.sh
 
 peer lifecycle chaincode install main_contract_new.tar.gz //安装需要切换节点证书
 
@@ -170,6 +173,7 @@ peer lifecycle chaincode queryinstalled
 
 //安装后新的链码id
 export NEW_CC_PACKAGE_ID=main_contract_2.0:e95164645a2d13595c6d0b7f2f20d191dd9af1ac7923c3c5ac081576ba52e812
+
 
 //审批也需要切换节点证书
 peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name main_contract --version 2.0 --package-id $NEW_CC_PACKAGE_ID --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
